@@ -1,0 +1,42 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+# API proxy routes — handled by edge function
+[[edge_functions]]
+  path = "/weather-api/*"
+  function = "api-proxy"
+
+[[edge_functions]]
+  path = "/metro-api/*"
+  function = "api-proxy"
+
+[[edge_functions]]
+  path = "/metro-static/*"
+  function = "api-proxy"
+
+[[edge_functions]]
+  path = "/transtar-cams/*"
+  function = "api-proxy"
+
+[[edge_functions]]
+  path = "/inrix-uas/*"
+  function = "api-proxy"
+
+[[edge_functions]]
+  path = "/inrix-api/*"
+  function = "api-proxy"
+
+[[edge_functions]]
+  path = "/inrix-incident-api/*"
+  function = "api-proxy"
+
+[[edge_functions]]
+  path = "/inrix-segment-api/*"
+  function = "api-proxy"
+
+# SPA fallback — serves index.html for all client-side routes
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
