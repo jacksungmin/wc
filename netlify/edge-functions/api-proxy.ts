@@ -51,9 +51,17 @@ export default async (request: Request): Promise<Response> => {
     : (route.base ?? '') + pathname.slice(routeKey.length) + search
 
   try {
+    // Forward Authorization from client (INRIX uses Bearer token per-request)
+    const forwarded: Record<string, string> = {}
+    const auth = request.headers.get('Authorization')
+    if (auth) forwarded['Authorization'] = auth
+
+    // Route-specific headers override forwarded ones
+    const headers = { ...forwarded, ...(route.headers ?? {}) }
+
     const upstream = await fetch(targetUrl, {
       method: request.method,
-      headers: route.headers ?? {},
+      headers,
       ...(request.method !== 'GET' && request.method !== 'HEAD'
         ? { body: request.body }
         : {}),
