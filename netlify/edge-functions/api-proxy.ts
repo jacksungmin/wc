@@ -18,8 +18,10 @@ const ROUTES: Record<string, Route> = {
       'Accept': 'application/geo+json',
     },
   },
+  // Client fetches /metro-api/GtfsRealtime/TripUpdates
+  // suffix = GtfsRealtime/TripUpdates → base must NOT include GtfsRealtime
   '/metro-api/': {
-    base: 'https://api.ridemetro.org/GtfsRealtime/',
+    base: 'https://api.ridemetro.org/',
     headers: { 'Ocp-Apim-Subscription-Key': METRO_KEY },
   },
   '/metro-static/google_transit.zip': {
@@ -48,19 +50,24 @@ export default async (request: Request): Promise<Response> => {
     ? route.fixed
     : (route.base ?? '') + pathname.slice(routeKey.length) + search
 
-  const upstream = await fetch(targetUrl, {
-    method: request.method,
-    headers: route.headers ?? {},
-    ...(request.method !== 'GET' && request.method !== 'HEAD'
-      ? { body: request.body }
-      : {}),
-  })
+  try {
+    const upstream = await fetch(targetUrl, {
+      method: request.method,
+      headers: route.headers ?? {},
+      ...(request.method !== 'GET' && request.method !== 'HEAD'
+        ? { body: request.body }
+        : {}),
+    })
 
-  return new Response(upstream.body, {
-    status: upstream.status,
-    headers: {
-      'Content-Type': upstream.headers.get('Content-Type') ?? 'application/octet-stream',
-      'Access-Control-Allow-Origin': '*',
-    },
-  })
+    return new Response(upstream.body, {
+      status: upstream.status,
+      headers: {
+        'Content-Type': upstream.headers.get('Content-Type') ?? 'application/octet-stream',
+        'Access-Control-Allow-Origin': '*',
+      },
+    })
+  } catch (err) {
+    console.error('[api-proxy] upstream error:', targetUrl, err)
+    return new Response('Upstream request failed', { status: 502 })
+  }
 }
