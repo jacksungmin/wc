@@ -195,6 +195,62 @@ body {
   width: 32px;
 }
 
+/* FIFA Volunteer Center animated marker */
+@keyframes volunteer-pulse {
+  0% { opacity: 0.8; transform: scale(0.8); }
+  70% { opacity: 0; transform: scale(1.6); }
+  100% { opacity: 0; transform: scale(1.6); }
+}
+
+@keyframes volunteer-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+
+.volunteer-marker {
+  align-items: center;
+  display: flex;
+  height: 42px;
+  justify-content: center;
+  position: relative;
+  width: 42px;
+}
+
+.volunteer-marker__ring {
+  animation: volunteer-pulse 2.4s ease-out infinite;
+  background: rgba(26, 86, 219, 0.15);
+  border: 2px solid #1a56db;
+  border-radius: 50%;
+  height: 38px;
+  position: absolute;
+  width: 38px;
+}
+
+.volunteer-marker__ring2 {
+  animation: volunteer-pulse 2.4s ease-out 1.2s infinite;
+  background: transparent;
+  border: 1.5px solid #1a56db;
+  border-radius: 50%;
+  height: 38px;
+  position: absolute;
+  width: 38px;
+}
+
+.volunteer-marker__icon {
+  align-items: center;
+  animation: volunteer-bob 2.2s ease-in-out infinite;
+  background: #0c1a3a;
+  border: 2.5px solid #1a56db;
+  border-radius: 50%;
+  box-shadow: 0 0 16px rgba(26, 86, 219, 0.5);
+  display: flex;
+  font-size: 16px;
+  height: 32px;
+  justify-content: center;
+  position: relative;
+  width: 32px;
+}
+
 /* Status ticker animation */
 @keyframes ticker-scroll {
   0% { transform: translateX(0); }

@@ -30,7 +30,7 @@ export function StatusTicker({
     `METRO Live Transit — ${metroRouteCount} active route${metroRouteCount !== 1 ? 's' : ''} · ${busTrips} live bus trip${busTrips !== 1 ? 's' : ''} · ${railDepartures} scheduled rail departure${railDepartures !== 1 ? 's' : ''} · ${positionedMetroCount} mapped`,
     `METRO panel: 6 route groups (METROrail · NRG Stadium · Fan Festival · Airport · Park & Ride · Local) · use eye icon to show or hide each group on the map`,
     `${liveFeeds} live camera feed${liveFeeds !== 1 ? 's' : ''} available · enable Cameras layer in Map Details to show all pins on the map`,
-    `Map POIs: NRG Stadium ⚽ · Fan Festival Entrance 🎪`,
+    `Map POIs: NRG Stadium ⚽ · Fan Festival 🎪 · FIFA Volunteer Center 🤝`,
     nextMatch
       ? `Next NRG match: ${nextMatch.homeTeam} vs ${nextMatch.awayTeam} · ${new Date(nextMatch.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} at ${nextMatch.kickoff}`
       : 'NRG Stadium World Cup 2026 schedule loaded',

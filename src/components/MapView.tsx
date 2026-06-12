@@ -140,6 +140,21 @@ function fanFestivalIcon() {
   })
 }
 
+function volunteerCenterIcon() {
+  return L.divIcon({
+    html: `
+      <div class="volunteer-marker">
+        <span class="volunteer-marker__ring"></span>
+        <span class="volunteer-marker__ring2"></span>
+        <span class="volunteer-marker__icon">🤝</span>
+      </div>
+    `,
+    className: '',
+    iconSize: [42, 42],
+    iconAnchor: [21, 21],
+  })
+}
+
 function cameraIcon(selected: boolean, hasFeed: boolean) {
   const bg = selected ? '#c8102e' : hasFeed ? '#1a4fbf' : '#0f766e'
   const border = '#2563eb'
@@ -301,6 +316,14 @@ export function MapView({ cameras, selectedCameraId, onCameraSelect, camerasEnab
     L.marker([29.750842, -95.353352], { icon: fanFestivalIcon(), zIndexOffset: 850 })
       .addTo(map)
       .bindTooltip('Fan Festival', {
+        direction: 'top',
+        offset: [0, -17],
+        className: 'map-tooltip',
+      })
+
+    L.marker([29.766004, -95.364554], { icon: volunteerCenterIcon(), zIndexOffset: 840 })
+      .addTo(map)
+      .bindTooltip('FIFA Volunteer Center', {
         direction: 'top',
         offset: [0, -17],
         className: 'map-tooltip',
