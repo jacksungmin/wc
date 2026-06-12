@@ -50,32 +50,42 @@ export default async (request: Request): Promise<Response> => {
     ? route.fixed
     : (route.base ?? '') + pathname.slice(routeKey.length) + search
 
-  try {
-    // Forward Authorization from client (INRIX uses Bearer token per-request)
-    const forwarded: Record<string, string> = {}
-    const auth = request.headers.get('Authorization')
-    if (auth) forwarded['Authorization'] = auth
+  // Forward Authorization from client (INRIX uses Bearer token per-request)
+  const forwarded: Record<string, string> = {}
+  const auth = request.headers.get('Authorization')
+  if (auth) forwarded['Authorization'] = auth
 
-    // Route-specific headers override forwarded ones
-    const headers = { ...forwarded, ...(route.headers ?? {}) }
+  // Route-specific headers override forwarded ones
+  const headers = { ...forwarded, ...(route.headers ?? {}) }
 
-    const upstream = await fetch(targetUrl, {
-      method: request.method,
-      headers,
-      ...(request.method !== 'GET' && request.method !== 'HEAD'
-        ? { body: request.body }
-        : {}),
-    })
-
-    return new Response(upstream.body, {
-      status: upstream.status,
-      headers: {
-        'Content-Type': upstream.headers.get('Content-Type') ?? 'application/octet-stream',
-        'Access-Control-Allow-Origin': '*',
-      },
-    })
-  } catch (err) {
-    console.error('[api-proxy] upstream error:', targetUrl, err)
-    return new Response('Upstream request failed', { status: 502 })
+  const fetchOptions: RequestInit = {
+    method: request.method,
+    headers,
+    ...(request.method !== 'GET' && request.method !== 'HEAD'
+      ? { body: request.body }
+      : {}),
   }
+
+  // Retry once on network failure — handles Deno cold-start on first deploy
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const upstream = await fetch(targetUrl, fetchOptions)
+      return new Response(upstream.body, {
+        status: upstream.status,
+        headers: {
+          'Content-Type': upstream.headers.get('Content-Type') ?? 'application/octet-stream',
+          'Access-Control-Allow-Origin': '*',
+        },
+      })
+    } catch (err) {
+      if (attempt === 0) {
+        await new Promise(r => setTimeout(r, 300))
+        continue
+      }
+      console.error('[api-proxy] upstream error:', targetUrl, err)
+      return new Response('Upstream request failed', { status: 502 })
+    }
+  }
+
+  return new Response('Upstream request failed', { status: 502 })
 }
