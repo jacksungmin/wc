@@ -19,18 +19,22 @@ export function StatusTicker({
   const positionedMetroCount = metroUpdates.filter(update => update.lat && update.lng).length
   const majorIncidentCount = incidents.filter(incident => incident.severity >= 3).length
 
+  const busTrips = metroUpdates.filter(u => !u.isScheduled).length
+  const railDepartures = metroUpdates.filter(u => u.isScheduled).length
+
   const items = [
     alerts.length > 0
       ? `${alerts.length} active weather alert${alerts.length !== 1 ? 's' : ''}: ${alerts.map(a => a.event).join(', ')}`
       : 'No active weather alerts for Houston',
-    `${incidents.length} INRIX incident${incidents.length !== 1 ? 's' : ''} in the 2-hour traffic window${majorIncidentCount > 0 ? ` (${majorIncidentCount} major+)` : ''}`,
-    `METRO bus (live): ${metroRouteCount} route${metroRouteCount !== 1 ? 's' : ''} / ${metroUpdates.filter(u => !u.isScheduled).length} trips · Rail (scheduled): ${metroUpdates.filter(u => u.isScheduled).length} upcoming departures · ${positionedMetroCount} mapped`,
-    `${liveFeeds} live traffic camera feeds available · selected camera marker shown on map · METRO layer on by default`,
+    `${incidents.length} traffic incident${incidents.length !== 1 ? 's' : ''} in the 2-hour window${majorIncidentCount > 0 ? ` · ${majorIncidentCount} high severity` : ''}`,
+    `METRO Live Transit — ${metroRouteCount} active route${metroRouteCount !== 1 ? 's' : ''} · ${busTrips} live bus trip${busTrips !== 1 ? 's' : ''} · ${railDepartures} scheduled rail departure${railDepartures !== 1 ? 's' : ''} · ${positionedMetroCount} mapped`,
+    `METRO panel: 6 route groups (METROrail · NRG Stadium · Fan Festival · Airport · Park & Ride · Local) · use eye icon to show or hide each group on the map`,
+    `${liveFeeds} live camera feed${liveFeeds !== 1 ? 's' : ''} available · enable Cameras layer in Map Details to show all pins on the map`,
     `Map POIs: NRG Stadium ⚽ · Fan Festival Entrance 🎪`,
     nextMatch
-      ? `Next NRG match: ${nextMatch.homeTeam} vs ${nextMatch.awayTeam} on ${new Date(nextMatch.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} at ${nextMatch.kickoff}`
-      : 'NRG Stadium World Cup schedule loaded',
-    'Default map: Satellite with Google traffic overlay · Switch basemap or toggle layers in Map details panel',
+      ? `Next NRG match: ${nextMatch.homeTeam} vs ${nextMatch.awayTeam} · ${new Date(nextMatch.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} at ${nextMatch.kickoff}`
+      : 'NRG Stadium World Cup 2026 schedule loaded',
+    'Map style: Satellite · real-time traffic on · switch map style or turn layers on/off in the Map Details panel',
   ]
 
   const text = items.join('     -     ')

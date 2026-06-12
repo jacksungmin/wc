@@ -183,37 +183,44 @@ function busDirectionStyle(directionId: number | undefined): { bg: string; arrow
 
 function metroIcon(update: MetroTripUpdate, selected: boolean) {
   const rail = isRailRoute(update)
-  const size = selected ? 28 : 22
 
-  let bg: string
-  let label: string
-  let cornerBadge = ''
-
-  if (rail) {
-    const line = railLineColor(update)
-    bg = line.bg
-    label = line.label
-    if (update.directionId === 0) {
-      cornerBadge = `<span style="position:absolute;top:1px;right:2px;font-size:6px;line-height:1;opacity:0.95;color:#fff">▲</span>`
-    } else if (update.directionId === 1) {
-      cornerBadge = `<span style="position:absolute;top:1px;right:2px;font-size:6px;line-height:1;opacity:0.95;color:#fff">▼</span>`
-    }
-  } else {
+  // Bus: pill badge showing route number only
+  if (!rail) {
     const dir = busDirectionStyle(update.directionId)
-    bg = selected ? '#0891b2' : dir.bg
-    label = (update.routeShortName ?? update.routeId ?? '').slice(0, 3)
-    if (dir.arrow) {
-      cornerBadge = `<span style="position:absolute;top:1px;right:2px;font-size:6px;line-height:1;opacity:0.95">${dir.arrow}</span>`
-    }
+    const bg = selected ? '#0891b2' : dir.bg
+    const busLabel = (update.routeShortName ?? update.routeId ?? '').slice(0, 3)
+    const arrow = dir.arrow
+    const chars = busLabel.length + (arrow ? 1 : 0)
+    const w = selected ? (chars <= 1 ? 23 : chars <= 2 ? 29 : chars <= 3 ? 34 : 40) : (chars <= 1 ? 20 : chars <= 2 ? 25 : chars <= 3 ? 31 : 36)
+    const h = selected ? 20 : 16
+    const fontSize = selected ? 10 : 8
+    return L.divIcon({
+      html: `
+        <div style="width:${w}px;height:${h}px;background:${bg};border:1px solid rgba(255,255,255,0.9);border-radius:50px;display:flex;align-items:center;justify-content:center;gap:1px;color:#fff;font:800 ${fontSize}px/1 Inter,Arial,sans-serif;box-shadow:0 0 6px ${bg}80,0 1px 4px rgba(0,0,0,0.3);cursor:pointer;letter-spacing:0.03em">
+          <span>${busLabel}</span>${arrow ? `<span style="font-size:${fontSize - 1}px;opacity:0.9">${arrow}</span>` : ''}
+        </div>
+      `,
+      className: '',
+      iconSize: [w, h],
+      iconAnchor: [w / 2, h / 2],
+    })
   }
 
-  const shape = rail
-    ? `<path d="M7 4.5h10a2 2 0 0 1 2 2v8a3 3 0 0 1-3 3H8a3 3 0 0 1-3-3v-8a2 2 0 0 1 2-2Z" /><path d="M8 8h8" /><path d="M8.5 13h.01" /><path d="M15.5 13h.01" /><path d="m9 19-2 2" /><path d="m15 19 2 2" />`
-    : `<path d="M6 5h12a2 2 0 0 1 2 2v8.5a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Z" /><path d="M7 8h10" /><path d="M7 12h10" /><path d="M7.5 17.5v1" /><path d="M16.5 17.5v1" />`
-
+  // Rail: circle with SVG icon + line label
+  const size = selected ? 28 : 22
+  const line = railLineColor(update)
+  const bg = line.bg
+  const label = line.label
+  let cornerBadge = ''
+  if (update.directionId === 0) {
+    cornerBadge = `<span style="position:absolute;top:1px;right:2px;font-size:6px;line-height:1;opacity:0.95;color:#fff">▲</span>`
+  } else if (update.directionId === 1) {
+    cornerBadge = `<span style="position:absolute;top:1px;right:2px;font-size:6px;line-height:1;opacity:0.95;color:#fff">▼</span>`
+  }
+  const shape = `<path d="M7 4.5h10a2 2 0 0 1 2 2v8a3 3 0 0 1-3 3H8a3 3 0 0 1-3-3v-8a2 2 0 0 1 2-2Z" /><path d="M8 8h8" /><path d="M8.5 13h.01" /><path d="M15.5 13h.01" /><path d="m9 19-2 2" /><path d="m15 19 2 2" />`
   return L.divIcon({
     html: `
-      <div style="position:relative;width:${size}px;height:${size}px;background:${bg};border:2px solid #ffffff;border-radius:${rail ? '50%' : '6px'};display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;color:#fff;font:800 7px/1 Inter,Arial,sans-serif;box-shadow:0 0 8px ${bg}90;cursor:pointer">
+      <div style="position:relative;width:${size}px;height:${size}px;background:${bg};border:1px solid #ffffff;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;color:#fff;font:800 7px/1 Inter,Arial,sans-serif;box-shadow:0 0 8px ${bg}90;cursor:pointer">
         <svg viewBox="0 0 24 24" width="${selected ? 14 : 12}" height="${selected ? 14 : 12}" aria-hidden="true" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${shape}</svg>
         <span>${label}</span>
         ${cornerBadge}
@@ -293,7 +300,7 @@ export function MapView({ cameras, selectedCameraId, onCameraSelect, camerasEnab
 
     L.marker([29.750842, -95.353352], { icon: fanFestivalIcon(), zIndexOffset: 850 })
       .addTo(map)
-      .bindTooltip('Fan Festival Entrance', {
+      .bindTooltip('Fan Festival', {
         direction: 'top',
         offset: [0, -17],
         className: 'map-tooltip',
@@ -517,10 +524,10 @@ export function MapView({ cameras, selectedCameraId, onCameraSelect, camerasEnab
       const marker = L.marker([cam.lat, cam.lng], { icon: cameraIcon(cam.id === selectedCameraId, hasFeed) })
         .addTo(map)
         .bindTooltip(
-          `${cam.name}<br><span style="color:#7a8ba8">${cam.highway} · ${cam.direction}</span><br><span style="color:${hasFeed ? '#60a5fa' : '#94a3b8'}">${hasFeed ? 'Click to open live feed' : 'Location only'}</span>`,
+          `${cam.name}<br><span style="color:#7a8ba8">${cam.highway} · ${cam.direction}</span>`,
           {
           direction: 'top',
-          offset: [0, hasFeed ? -13 : -10],
+          offset: [0, -13],
           className: 'map-tooltip',
           }
         )

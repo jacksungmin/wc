@@ -494,6 +494,17 @@
       margin-top: 20px;
     }
 
+    /* ── Note box ── */
+    .note {
+      background: rgba(251,191,36,0.06);
+      border: 1px solid rgba(251,191,36,0.2);
+      border-radius: 6px;
+      padding: 10px 14px;
+      font-size: 10px;
+      color: var(--muted);
+      margin-bottom: 16px;
+    }
+
     /* ── Footer ── */
     footer {
       margin-top: 64px;
@@ -545,7 +556,7 @@
       <div class="eyebrow">H-GAC · Houston–Galveston Area Council</div>
       <h1>World Cup 2026<br><span>Mobility Dashboard</span></h1>
       <p class="subtitle">
-        Real-time situational awareness for transportation conditions around NRG Stadium during FIFA World Cup 2026. Integrates live traffic, transit, weather, and camera feeds in a single operational view.
+        Real-time situational awareness for transportation conditions around NRG Stadium and World Cup venues during FIFA World Cup 2026. Integrates live traffic, transit, weather, and camera feeds in a single operational view.
       </p>
       <div class="meta-tags">
         <span class="meta-tag">Houston, TX</span>
@@ -571,22 +582,22 @@
         <div class="card">
           <span class="card-icon">🚌</span>
           <div class="card-title">METRO Transit</div>
-          <div class="card-desc">Live bus and scheduled rail departures for routes serving NRG Stadium</div>
+          <div class="card-desc">Live bus and scheduled rail departures organized by route category</div>
         </div>
         <div class="card">
           <span class="card-icon">🚦</span>
           <div class="card-title">INRIX Traffic</div>
-          <div class="card-desc">Real-time incident alerts and speed segments on key corridors</div>
+          <div class="card-desc">Real-time incident alerts and speed conditions on key corridors</div>
         </div>
         <div class="card">
           <span class="card-icon">📷</span>
           <div class="card-title">Camera Feeds</div>
-          <div class="card-desc">Live TxDOT and TranStar camera streams sorted by proximity to NRG</div>
+          <div class="card-desc">Live TxDOT and TranStar camera feeds sorted by proximity to NRG</div>
         </div>
         <div class="card">
           <span class="card-icon">⛅</span>
           <div class="card-title">Weather</div>
-          <div class="card-desc">NWS observations and active alert badges with severity color-coding</div>
+          <div class="card-desc">NWS conditions and active alert badges with severity color-coding</div>
         </div>
       </div>
     </div>
@@ -601,16 +612,78 @@
         </div>
       </div>
       <p>The dashboard is divided into five zones:</p>
-      <div class="layout-diagram">┌───────────────────────────────────────────────────────────────────┐
-│  <span class="hl">HEADER</span> · Logo · Title · Weather Strip · Alerts · Clock           │
-├──────────────┬────────────────────────────────┬────────────────────┤
-│  <span class="hl">LEFT PANEL</span>   │       <span class="hl">CENTER MAP</span>            │   <span class="hl">RIGHT PANEL</span>      │
-│  · Matches   │                                │   · Camera Feeds   │
-│  · METRO     │  Leaflet map with layers,      │   · INRIX Traffic  │
-│    Transit   │  markers, and overlays         │     (2 Hours)      │
-├──────────────┴────────────────────────────────┴────────────────────┤
-│  <span class="hl">STATUS TICKER</span> (scrolling real-time summary)                       │
-└───────────────────────────────────────────────────────────────────┘</div>
+
+      <div style="display:flex;flex-direction:column;gap:4px;font-size:11px;user-select:none">
+
+        <!-- Header -->
+        <div style="background:var(--raised);border:1px solid var(--border-md);border-radius:8px;padding:12px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px">
+          <span style="color:var(--cyan);font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.12em;text-transform:uppercase;font-weight:600">Header</span>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <span style="color:var(--muted);background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:2px 8px">Logo &amp; Title</span>
+            <span style="color:var(--muted);background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:2px 8px">Weather Strip</span>
+            <span style="color:var(--muted);background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:2px 8px">Alerts</span>
+            <span style="color:var(--muted);background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:2px 8px">Clock</span>
+          </div>
+        </div>
+
+        <!-- Three-column middle -->
+        <div style="display:grid;grid-template-columns:200px 1fr 200px;gap:4px;min-height:160px">
+
+          <!-- Left panel -->
+          <div style="background:var(--raised);border:1px solid var(--border-md);border-radius:8px;padding:14px 16px;display:flex;flex-direction:column;gap:8px">
+            <span style="color:var(--cyan);font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.12em;text-transform:uppercase;font-weight:600">Left Panel</span>
+            <div style="display:flex;flex-direction:column;gap:6px">
+              <div style="background:var(--surface);border:1px solid var(--border);border-radius:5px;padding:7px 10px">
+                <div style="color:var(--text);font-weight:600;margin-bottom:2px">Match Schedule</div>
+                <div style="color:var(--dim);font-size:10px">Upcoming & live games</div>
+              </div>
+              <div style="background:var(--surface);border:1px solid var(--border);border-radius:5px;padding:7px 10px">
+                <div style="color:var(--text);font-weight:600;margin-bottom:2px">METRO Transit</div>
+                <div style="color:var(--dim);font-size:10px">6 collapsible route groups</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Center map -->
+          <div style="background:var(--raised);border:1px solid var(--border-md);border-radius:8px;padding:14px 16px;display:flex;flex-direction:column;justify-content:space-between">
+            <span style="color:var(--cyan);font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.12em;text-transform:uppercase;font-weight:600">Center Map</span>
+            <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px">
+              <span style="color:var(--muted);background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:3px 9px">⚽ NRG Stadium</span>
+              <span style="color:var(--muted);background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:3px 9px">🎪 Fan Festival</span>
+              <span style="color:var(--muted);background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:3px 9px">🚌 Bus &amp; Rail pins</span>
+              <span style="color:var(--muted);background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:3px 9px">📷 Camera pins</span>
+              <span style="color:var(--muted);background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:3px 9px">🚦 Incidents</span>
+              <span style="color:var(--muted);background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:3px 9px">Traffic speed lines</span>
+            </div>
+            <div style="margin-top:12px;display:flex;gap:6px">
+              <span style="font-size:9px;color:var(--dim);background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:2px 7px">Satellite · Google · Hybrid · Terrain</span>
+            </div>
+          </div>
+
+          <!-- Right panel -->
+          <div style="background:var(--raised);border:1px solid var(--border-md);border-radius:8px;padding:14px 16px;display:flex;flex-direction:column;gap:8px">
+            <span style="color:var(--cyan);font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.12em;text-transform:uppercase;font-weight:600">Right Panel</span>
+            <div style="display:flex;flex-direction:column;gap:6px">
+              <div style="background:var(--surface);border:1px solid var(--border);border-radius:5px;padding:7px 10px;flex:1">
+                <div style="color:var(--text);font-weight:600;margin-bottom:2px">Camera Feeds</div>
+                <div style="color:var(--dim);font-size:10px">Live video · sorted by distance</div>
+              </div>
+              <div style="background:var(--surface);border:1px solid var(--border);border-radius:5px;padding:7px 10px">
+                <div style="color:var(--text);font-weight:600;margin-bottom:2px">INRIX Traffic</div>
+                <div style="color:var(--dim);font-size:10px">Incidents · 2-hour window</div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Status ticker -->
+        <div style="background:var(--raised);border:1px solid var(--border-md);border-radius:8px;padding:10px 18px;display:flex;align-items:center;gap:12px">
+          <span style="color:var(--cyan);font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.12em;text-transform:uppercase;font-weight:600;white-space:nowrap">Status Ticker</span>
+          <span style="color:var(--dim);font-size:10px">Scrolling real-time summary — weather · incidents · METRO trips · cameras · next match</span>
+        </div>
+
+      </div>
     </div>
 
     <!-- 3. Header -->
@@ -630,11 +703,11 @@
           </thead>
           <tbody>
             <tr><td>Logo / Title</td><td>H-GAC branding and dashboard title with Houston, TX subtitle</td></tr>
-            <tr><td><code>?</code> Button</td><td>Opens this User Guide as a popup overlay</td></tr>
+            <tr><td><code>?</code> Button</td><td>Opens this User Guide</td></tr>
             <tr><td>Weather Strip</td><td>Live NRG-area conditions: sky description · temperature · feels like · wind speed · relative humidity</td></tr>
             <tr><td>Weather Alerts</td><td>Pulsing severity badges for active NWS alerts. Hover any badge for the full headline</td></tr>
-            <tr><td>Clock</td><td>Live CDT time (HH:MM:SS) and current date — top right</td></tr>
-            <tr><td>Critical Incidents</td><td>Orange pulsing pill appears when INRIX reports severity-4 incidents</td></tr>
+            <tr><td>Clock</td><td>Live CDT time and current date — top right</td></tr>
+            <tr><td>Critical Incidents</td><td>Orange pulsing label appears when INRIX reports high-severity incidents</td></tr>
           </tbody>
         </table>
       </div>
@@ -655,40 +728,56 @@
         Displays the World Cup 2026 NRG Stadium match schedule. Each card shows the home and away teams with country flags, kickoff time, group or stage, and match status. Upcoming matches show a countdown (<em>In Xd</em>) and today's match is highlighted.
       </p>
 
-      <h3>METRO Live Bus Transit To/From NRG Stadium (bottom 70%)</h3>
-      <p>Displays real-time bus trips and static rail scheduled departures for routes serving NRG Stadium.</p>
+      <h3>METRO Live Transit — World Cup Houston 2026 (bottom 70%)</h3>
+      <p>Displays real-time bus trips and scheduled rail departures organized into six collapsible route groups. All groups start collapsed — click a group header to expand it.</p>
 
       <div class="table-wrap">
         <table>
-          <thead><tr><th>Type</th><th>Routes</th></tr></thead>
+          <thead><tr><th>Group</th><th>Routes</th></tr></thead>
           <tbody>
             <tr>
-              <td>Rail <em>(Scheduled)</em></td>
+              <td>METROrail <em>(scheduled)</em></td>
               <td>
                 <span style="color:#CC1030;font-weight:600">Red Line</span> ·
                 <span style="color:#4ade80;font-weight:600">Green Line</span> ·
                 <span style="color:#a855f7;font-weight:600">Purple Line</span>
               </td>
             </tr>
-            <tr>
-              <td>Bus <em>(Live)</em></td>
-              <td>8 West Bellfort · 11 Almeda · 14 Hiram Clarke · 60 Cambridge · 73 Bellfort · 84 Buffalo Speedway · 87 Sunnyside · 211 West Loop</td>
-            </tr>
+            <tr><td>Bus to NRG Stadium</td><td>8 West Bellfort · 11 Almeda/Lyons · 14 Hiram Clarke · 60 Cambridge · 73 Bellfort · 84 Buffalo Speedway · 87 Sunnyside · 211 West Loop</td></tr>
+            <tr><td>Bus to Fan Festival</td><td>40 Telephone/Heights · 41 Kirby/Polk</td></tr>
+            <tr><td>Airport Routes to Downtown</td><td>500 Downtown Direct · 102 Bush IAH · 40 Telephone/Heights</td></tr>
+            <tr><td>Park &amp; Ride to Downtown</td><td>108 · 151 · 209 · 219 · 229 · 249 · 259 · 269</td></tr>
+            <tr><td>Local Bus to Downtown</td><td>20 Canal/Memorial · 54 Scott · 82 Westheimer · 85 Antoine/Washington · 137 Northshore Express</td></tr>
           </tbody>
         </table>
       </div>
 
+      <div class="note">Route 40 appears in both <strong>Bus to Fan Festival</strong> and <strong>Airport Routes to Downtown</strong> as it serves both corridors.</div>
+
+      <h3>Panel Controls</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Control</th><th>Action</th></tr></thead>
+          <tbody>
+            <tr><td>Click a group header</td><td>Expand or collapse the trip list for that group</td></tr>
+            <tr><td>Eye icon (right of header)</td><td>Show or hide that group's pins on the map</td></tr>
+            <tr><td>Refresh button (top-right)</td><td>Manually reload the live transit feed</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Reading a Trip Entry</h3>
       <div class="table-wrap">
         <table>
           <thead><tr><th>Indicator</th><th>Meaning</th></tr></thead>
           <tbody>
             <tr><td>Colored route badge</td><td>Official line color — Red, Green, or Purple for rail; Blue for bus</td></tr>
-            <tr><td><code>SCHED</code> badge</td><td>Trip comes from the static schedule; no live GPS for rail</td></tr>
-            <tr><td>▲ / ▼ arrow</td><td>▲ = Outbound · ▼ = Inbound direction of travel</td></tr>
+            <tr><td><code>SCHED</code> badge</td><td>Trip is from the timetable — no live vehicle tracking available (rail only)</td></tr>
+            <tr><td>scheduled label on METROrail</td><td>Confirms all rail data is timetable-based, not live</td></tr>
+            <tr><td>▲ Outbound / ▼ Inbound</td><td>Direction of travel</td></tr>
             <tr><td>Arrival time</td><td>Next stop arrival time</td></tr>
             <tr><td>on time / +Xm</td><td>Real-time delay status for bus trips</td></tr>
             <tr><td>Click a trip row</td><td>Zooms the map to that vehicle or stop location</td></tr>
-            <tr><td>Refresh button</td><td>Manually reload the live METRO feed</td></tr>
           </tbody>
         </table>
       </div>
@@ -703,34 +792,35 @@
           <h2>Center Map</h2>
         </div>
       </div>
-      <p>The interactive Leaflet map is the primary view. It defaults to the Satellite basemap with a Google traffic overlay and METRO markers enabled.</p>
+      <p>The interactive map is the primary view. It defaults to the Satellite map style with real-time traffic and METRO pins enabled.</p>
 
       <h3>Map Controls</h3>
       <div class="table-wrap">
         <table>
           <thead><tr><th>Control</th><th>Location</th><th>Action</th></tr></thead>
           <tbody>
-            <tr><td>🏠 Home button</td><td>Top-right</td><td>Reset map to default Houston area zoom and center</td></tr>
-            <tr><td>⊞ Layers panel</td><td>Top-right (below Home)</td><td>Toggle overlays and switch basemap</td></tr>
+            <tr><td>🏠 Home button</td><td>Top-right</td><td>Reset map to default Houston area view</td></tr>
+            <tr><td>⊞ Layers panel</td><td>Top-right (below Home)</td><td>Turn layers on or off and change the map style</td></tr>
             <tr><td>Zoom controls</td><td>Bottom-right</td><td>Standard + / − zoom</td></tr>
           </tbody>
         </table>
       </div>
 
-      <h3>Layer Toggles</h3>
+      <h3>Map Layers</h3>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>Toggle</th><th>Default</th><th>Description</th></tr></thead>
+          <thead><tr><th>Layer</th><th>Default</th><th>Description</th></tr></thead>
           <tbody>
-            <tr><td>Traffic</td><td>On</td><td>Google real-time traffic color overlay</td></tr>
-            <tr><td>Cameras</td><td>Off</td><td>Show/hide live camera markers (auto-enables when camera selected)</td></tr>
-            <tr><td>METRO Transit</td><td>On</td><td>Show/hide bus and rail vehicle markers</td></tr>
-            <tr><td>GOES Satellite</td><td>Off</td><td>NOAA GOES-18 live cloud imagery overlay</td></tr>
+            <tr><td>Traffic</td><td>On</td><td>Real-time traffic color overlay on roads</td></tr>
+            <tr><td>Cameras</td><td>Off</td><td>Show or hide live camera pins on the map</td></tr>
+            <tr><td>METRO Transit</td><td>On</td><td>Show or hide bus and rail pins on the map</td></tr>
+            <tr><td>GOES Satellite</td><td>Off</td><td>NOAA GOES-18 live cloud imagery</td></tr>
           </tbody>
         </table>
       </div>
+      <div class="note">Individual route groups can also be shown or hidden directly from the METRO panel using the <strong>eye icon</strong> on each group header.</div>
 
-      <h3>Basemap Options</h3>
+      <h3>Map Style Options</h3>
       <div class="color-row">
         <div class="color-chip"><span style="font-size:12px">🌑</span> Command Dark</div>
         <div class="color-chip"><span style="font-size:12px">🗺️</span> Google</div>
@@ -739,7 +829,7 @@
         <div class="color-chip"><span style="font-size:12px">⛰️</span> Terrain</div>
       </div>
 
-      <h3>Map Markers</h3>
+      <h3>Map Pins</h3>
       <div class="marker-grid">
         <div class="marker-item">
           <div class="marker-swatch" style="font-size:20px">⚽</div>
@@ -757,74 +847,98 @@
         </div>
         <div class="marker-item">
           <div class="marker-swatch">
-            <div style="width:20px;height:16px;background:#0e7490;border-radius:4px;border:2px solid #fff;display:flex;align-items:center;justify-content:center;font-size:8px;color:#fff;font-weight:700;position:relative">
-              <span style="position:absolute;top:0;right:1px;font-size:6px">▲</span>
+            <div style="width:28px;height:16px;background:#0e7490;border-radius:50px;border:1px solid rgba(255,255,255,0.9);display:flex;align-items:center;justify-content:center;font-size:8px;color:#fff;font-weight:800;gap:1px">
+              <span>82</span><span style="font-size:7px">▲</span>
             </div>
           </div>
           <div>
             <div class="marker-label">Bus — Outbound ▲</div>
-            <div class="marker-sub">Teal rectangle marker</div>
+            <div class="marker-sub">Teal pill label with route number</div>
           </div>
         </div>
         <div class="marker-item">
           <div class="marker-swatch">
-            <div style="width:20px;height:16px;background:#b45309;border-radius:4px;border:2px solid #fff;display:flex;align-items:center;justify-content:center;font-size:8px;color:#fff;font-weight:700;position:relative">
-              <span style="position:absolute;top:0;right:1px;font-size:6px">▼</span>
+            <div style="width:28px;height:16px;background:#b45309;border-radius:50px;border:1px solid rgba(255,255,255,0.9);display:flex;align-items:center;justify-content:center;font-size:8px;color:#fff;font-weight:800;gap:1px">
+              <span>82</span><span style="font-size:7px">▼</span>
             </div>
           </div>
           <div>
             <div class="marker-label">Bus — Inbound ▼</div>
-            <div class="marker-sub">Amber rectangle marker</div>
+            <div class="marker-sub">Amber pill label with route number</div>
           </div>
         </div>
         <div class="marker-item">
           <div class="marker-swatch">
-            <div style="width:18px;height:18px;background:#CC1030;border-radius:50%;border:2px solid #fff;display:flex;align-items:center;justify-content:center;font-size:6px;color:#fff;font-weight:700"></div>
+            <div style="width:18px;height:18px;background:#CC1030;border-radius:50%;border:1px solid #fff;display:flex;align-items:center;justify-content:center;font-size:6px;color:#fff;font-weight:700"></div>
           </div>
           <div>
             <div class="marker-label">Rail — Red Line</div>
-            <div class="marker-sub">Circular red marker with ▲/▼ badge</div>
+            <div class="marker-sub">Red circle with ▲/▼ direction badge</div>
           </div>
         </div>
         <div class="marker-item">
           <div class="marker-swatch">
-            <div style="width:18px;height:18px;background:#007A33;border-radius:50%;border:2px solid #fff;display:flex;align-items:center;justify-content:center;font-size:6px;color:#fff;font-weight:700"></div>
+            <div style="width:18px;height:18px;background:#007A33;border-radius:50%;border:1px solid #fff;display:flex;align-items:center;justify-content:center;font-size:6px;color:#fff;font-weight:700"></div>
           </div>
           <div>
             <div class="marker-label">Rail — Green Line</div>
-            <div class="marker-sub">Circular green marker with ▲/▼ badge</div>
+            <div class="marker-sub">Green circle with ▲/▼ direction badge</div>
           </div>
         </div>
         <div class="marker-item">
           <div class="marker-swatch">
-            <div style="width:18px;height:18px;background:#5C2882;border-radius:50%;border:2px solid #fff;display:flex;align-items:center;justify-content:center;font-size:6px;color:#fff;font-weight:700"></div>
+            <div style="width:18px;height:18px;background:#5C2882;border-radius:50%;border:1px solid #fff;display:flex;align-items:center;justify-content:center;font-size:6px;color:#fff;font-weight:700"></div>
           </div>
           <div>
             <div class="marker-label">Rail — Purple Line</div>
-            <div class="marker-sub">Circular purple marker with ▲/▼ badge</div>
+            <div class="marker-sub">Purple circle with ▲/▼ direction badge</div>
           </div>
         </div>
         <div class="marker-item">
           <div class="marker-swatch">
-            <div style="width:18px;height:18px;background:#1a4fbf;border-radius:50%;border:2px solid #2563eb"></div>
+            <div style="width:18px;height:18px;background:#1a4fbf;border-radius:50%;border:1px solid #2563eb"></div>
           </div>
           <div>
             <div class="marker-label">Traffic Camera</div>
-            <div class="marker-sub">Shown only for the selected camera feed</div>
+            <div class="marker-sub">Visible when Cameras layer is on. Hover for name; click to open feed.</div>
           </div>
         </div>
       </div>
 
-      <h3>INRIX Incident Severity</h3>
+      <h3>Available Live Camera Feeds</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Camera</th><th>Highway</th></tr></thead>
+          <tbody>
+            <tr><td>IH-10 Katy @ West Loop</td><td>I-10 Katy</td></tr>
+            <tr><td>IH-10 Katy @ West Loop (S)</td><td>I-10 Katy</td></tr>
+            <tr><td>IH-10 Katy @ Post Oak</td><td>I-10 Katy</td></tr>
+            <tr><td>IH-10 Katy @ North Post Oak</td><td>I-10 Katy</td></tr>
+            <tr><td>IH-45 Gulf @ West Dallas</td><td>IH-45 Gulf</td></tr>
+            <tr><td>IH-45 Gulf @ San Jacinto</td><td>IH-45 Gulf</td></tr>
+            <tr><td>IH-45 North @ Franklin</td><td>IH-45 North</td></tr>
+            <tr><td>IH-69 Eastex @ IH 10</td><td>IH-69 Eastex</td></tr>
+            <tr><td>IH-69 Eastex @ Franklin</td><td>IH-69 Eastex</td></tr>
+            <tr><td>IH-69 Eastex @ Texas</td><td>IH-69 Eastex</td></tr>
+            <tr><td>IH-69 Southwest @ Mc Gowen</td><td>IH-69 Southwest</td></tr>
+            <tr><td>IH-69 Southwest @ Elgin</td><td>IH-69 Southwest</td></tr>
+            <tr><td>IH-69 Southwest @ SH 288</td><td>IH-69 Southwest</td></tr>
+            <tr><td>IH-69 Southwest @ SH 288 (S)</td><td>IH-69 Southwest</td></tr>
+            <tr><td><em>+ additional DriveTexas feeds</em></td><td>Various</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Incident Severity</h3>
       <div class="color-row">
         <div class="color-chip"><span class="chip-dot" style="background:#6b7280"></span>Low (1)</div>
         <div class="color-chip"><span class="chip-dot" style="background:#ca8a04"></span>Moderate (2)</div>
         <div class="color-chip"><span class="chip-dot" style="background:#ea580c"></span>High (3)</div>
         <div class="color-chip"><span class="chip-dot" style="background:#dc2626"></span>Critical (4)</div>
       </div>
-      <p style="font-size:10px">Incident letter codes: <code>C</code>=Crash · <code>X</code>=Closure · <code>W</code>=Construction · <code>H</code>=Hazard · <code>Wx</code>=Weather · <code>E</code>=Event</p>
+      <p style="font-size:10px">Incident type codes: <code>C</code>=Crash · <code>X</code>=Closure · <code>W</code>=Construction · <code>H</code>=Hazard · <code>Wx</code>=Weather · <code>E</code>=Event</p>
 
-      <h3>Traffic Speed Segments</h3>
+      <h3>Traffic Speed Lines</h3>
       <div class="color-row">
         <div class="color-chip"><span class="chip-swatch" style="background:#22c55e"></span>Free flow ≥85%</div>
         <div class="color-chip"><span class="chip-swatch" style="background:#eab308"></span>Moderate 65–84%</div>
@@ -844,26 +958,24 @@
       </div>
 
       <h3>Camera Feeds (top 68%)</h3>
-      <p>Live traffic camera feeds from TxDOT DriveTexas and Houston TranStar, sorted by distance from NRG Stadium — closest cameras appear first.</p>
+      <p>Live traffic camera feeds from TxDOT DriveTexas (live video) and Houston TranStar (snapshot images), sorted by distance from NRG Stadium — closest cameras appear first.</p>
       <div class="table-wrap">
         <table>
           <thead><tr><th>Action</th><th>Result</th></tr></thead>
           <tbody>
-            <tr><td>Click a camera thumbnail</td><td>Selects it and shows its location marker on the map</td></tr>
-            <tr><td>Click the selected camera again</td><td>Deselects and hides the map marker</td></tr>
-            <tr><td>HLS badge</td><td>Camera supports live streaming video</td></tr>
-            <tr><td>Snapshot badge</td><td>Camera provides a refreshing JPEG still image</td></tr>
+            <tr><td>Click a camera</td><td>Selects it and flies the map to its location</td></tr>
+            <tr><td>Click the selected camera again</td><td>Deselects and returns the map to the default view</td></tr>
           </tbody>
         </table>
       </div>
 
       <h3>INRIX Traffic — 2 Hours (bottom 32%)</h3>
-      <p>Lists active traffic incidents within a 2-hour lookahead window around the Houston area.</p>
+      <p>Lists active traffic incidents within a 2-hour window around the Houston area.</p>
       <div class="table-wrap">
         <table>
           <thead><tr><th>Action</th><th>Result</th></tr></thead>
           <tbody>
-            <tr><td>Click an incident</td><td>Zooms the map to its location and opens a detail popup</td></tr>
+            <tr><td>Click an incident</td><td>Zooms the map to its location and shows details</td></tr>
             <tr><td>Click the selected incident again</td><td>Deselects and returns the map to the default view</td></tr>
             <tr><td>Status dot color</td><td>Green = connected · Amber = loading · Red = error</td></tr>
           </tbody>
@@ -880,7 +992,7 @@
           <h2>Weather Alerts</h2>
         </div>
       </div>
-      <p>Active NWS alerts appear as pulsing colored badges in the header weather strip, separated from the weather data by a vertical divider.</p>
+      <p>Active NWS alerts appear as pulsing colored badges in the header, separated from the weather data by a vertical divider.</p>
       <div class="alert-grid">
         <div class="alert-badge" style="background:rgba(248,113,113,0.1);border-color:rgba(248,113,113,0.3);color:#f87171">
           <span class="pulse-dot" style="background:#f87171"></span>Extreme
@@ -895,7 +1007,7 @@
           <span class="pulse-dot" style="background:#60a5fa"></span>Minor
         </div>
       </div>
-      <p>Hover over any alert badge to read the full NWS headline in a tooltip. Multiple active alerts each show their own badge.</p>
+      <p>Hover over any alert badge to read the full NWS headline. Multiple active alerts each show their own badge.</p>
     </div>
 
     <!-- 8. Status Ticker -->
@@ -912,13 +1024,13 @@
         <table>
           <thead><tr><th>#</th><th>Content</th></tr></thead>
           <tbody>
-            <tr><td>1</td><td>Active NWS weather alert event names, or "No active weather alerts for Houston"</td></tr>
-            <tr><td>2</td><td>INRIX incident count and major (severity 3+) incident count</td></tr>
-            <tr><td>3</td><td>METRO bus live trips and rail scheduled departures summary with mapped positions</td></tr>
-            <tr><td>4</td><td>Live camera feed count and camera layer behavior</td></tr>
-            <tr><td>5</td><td>Map POI listing: NRG Stadium and Fan Festival Entrance</td></tr>
+            <tr><td>1</td><td>Active NWS weather alert names, or "No active weather alerts for Houston"</td></tr>
+            <tr><td>2</td><td>INRIX incident count and major incident count</td></tr>
+            <tr><td>3</td><td>METRO live bus trips and scheduled rail departures summary</td></tr>
+            <tr><td>4</td><td>Live camera feed count</td></tr>
+            <tr><td>5</td><td>Map points of interest: NRG Stadium and Fan Festival Entrance</td></tr>
             <tr><td>6</td><td>Next scheduled NRG match: teams, date, and kickoff time</td></tr>
-            <tr><td>7</td><td>Default basemap and overlay info</td></tr>
+            <tr><td>7</td><td>Current map style and background information</td></tr>
           </tbody>
         </table>
       </div>
@@ -938,13 +1050,13 @@
           <thead><tr><th>Source</th><th>Data</th><th>Refresh</th></tr></thead>
           <tbody>
             <tr><td>NWS / weather.gov</td><td>Weather observations and active alerts for NRG area</td><td>~5 min</td></tr>
-            <tr><td>Houston METRO GTFS-RT</td><td>Live bus trip updates (real-time)</td><td>30 sec</td></tr>
-            <tr><td>Houston METRO Static GTFS</td><td>Rail schedule for Red, Green, and Purple Lines</td><td>On load</td></tr>
-            <tr><td>INRIX</td><td>Traffic incidents and corridor speed segments</td><td>~2 min</td></tr>
-            <tr><td>TxDOT DriveTexas</td><td>HLS live camera streams</td><td>Live stream</td></tr>
-            <tr><td>Houston TranStar</td><td>JPEG snapshot camera feeds</td><td>Live stream</td></tr>
-            <tr><td>Google Maps</td><td>Satellite imagery and real-time traffic tiles</td><td>Live</td></tr>
-            <tr><td>NOAA GOES-18</td><td>Satellite cloud imagery (optional overlay)</td><td>~10 min</td></tr>
+            <tr><td>Houston METRO</td><td>Live bus trip updates</td><td>30 sec</td></tr>
+            <tr><td>Houston METRO</td><td>Rail timetable (Red, Green, and Purple Lines)</td><td>At startup</td></tr>
+            <tr><td>INRIX</td><td>Traffic incidents and corridor speed conditions</td><td>~2 min</td></tr>
+            <tr><td>TxDOT DriveTexas</td><td>Live traffic camera video</td><td>Live</td></tr>
+            <tr><td>Houston TranStar</td><td>Traffic camera snapshot images</td><td>~60 sec</td></tr>
+            <tr><td>Google Maps</td><td>Satellite imagery and real-time traffic layers</td><td>Live</td></tr>
+            <tr><td>NOAA GOES-18</td><td>Satellite cloud imagery</td><td>~10 min</td></tr>
           </tbody>
         </table>
       </div>
@@ -964,21 +1076,35 @@
           <span class="tip-icon">🏟️</span>
           <div class="tip-body">
             <strong>Game Day Preparation</strong>
-            <span>Open the METRO Live panel 90 minutes before kickoff to see scheduled rail departures. Rail entries always show a SCHED badge — this is expected since METRO does not publish real-time GPS for rail.</span>
+            <span>Expand the Bus to NRG Stadium group 90 minutes before kickoff to monitor inbound routes. Rail entries always show a "scheduled" label — this is expected since METRO does not publish live vehicle tracking for rail.</span>
+          </div>
+        </li>
+        <li>
+          <span class="tip-icon">👁️</span>
+          <div class="tip-body">
+            <strong>Declutter the Map</strong>
+            <span>Use the eye icon on each route group to show or hide those pins on the map. Focus on just the corridors relevant to your current situation without turning off everything else.</span>
+          </div>
+        </li>
+        <li>
+          <span class="tip-icon">✈️</span>
+          <div class="tip-body">
+            <strong>Airport &amp; Fan Festival Routes</strong>
+            <span>Route 40 appears under both Fan Festival and Airport groups since it serves both corridors. Routes 500 (Downtown Direct) and 102 (Bush IAH) connect airports to downtown on match days.</span>
           </div>
         </li>
         <li>
           <span class="tip-icon">🚦</span>
           <div class="tip-body">
             <strong>Traffic Monitoring</strong>
-            <span>Watch for red segments on I-610 South Loop or US-59 near NRG. Use the INRIX Traffic panel on the right for a list of active incidents. Click any incident to zoom the map to its exact location.</span>
+            <span>Watch for red road lines on I-610 South Loop or US-59 near NRG. Use the INRIX Traffic panel on the right for a list of active incidents. Click any incident to zoom the map to its exact location.</span>
           </div>
         </li>
         <li>
           <span class="tip-icon">📷</span>
           <div class="tip-body">
             <strong>Camera Feeds</strong>
-            <span>Feeds are sorted closest to NRG Stadium first — the top entries cover the immediate stadium area. Clicking a camera shows its pin on the map. Click it again to dismiss.</span>
+            <span>Turn on the Cameras layer in Map Details to see all camera pins, or click a camera in the right panel to jump directly to it. Feeds are sorted closest to NRG Stadium first.</span>
           </div>
         </li>
         <li>
@@ -986,13 +1112,6 @@
           <div class="tip-body">
             <strong>Weather Alerts</strong>
             <span>Hover over colored alert badges in the header to read the full NWS headline. Red = Extreme, Orange = Severe, Yellow = Moderate, Blue = Minor.</span>
-          </div>
-        </li>
-        <li>
-          <span class="tip-icon">🗺️</span>
-          <div class="tip-body">
-            <strong>Map Navigation</strong>
-            <span>Use the Home button (top-right) to quickly return to the default Houston view after zooming in on an incident, camera, or transit vehicle. Switch basemaps in the Map Details panel for different viewing contexts.</span>
           </div>
         </li>
         <li>

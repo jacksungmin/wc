@@ -4,7 +4,7 @@ import { MatchSchedule } from '@/components/MatchSchedule'
 import { CameraGrid } from '@/components/CameraGrid'
 import { StatusTicker } from '@/components/StatusTicker'
 import { IncidentList } from '@/components/IncidentList'
-import { MetroTransitPanel } from '@/components/MetroTransitPanel'
+import { MetroTransitPanel, ROUTE_GROUPS } from '@/components/MetroTransitPanel'
 import { UserGuide } from '@/components/UserGuide'
 import { useWeather } from '@/hooks/useWeather'
 import { useInrix } from '@/hooks/useInrix'
@@ -33,6 +33,16 @@ export default function App() {
   const [showGuide, setShowGuide] = useState(false)
   const [selectedCameraId, setSelectedCameraId] = useState<string | null>('TX_HOU_327')
   const [camerasEnabled, setCamerasEnabled] = useState(false)
+  const [enabledMetroGroups, setEnabledMetroGroups] = useState<Set<string>>(
+    () => new Set(ROUTE_GROUPS.map(g => g.id))
+  )
+  const toggleMetroGroup = useCallback((id: string) => {
+    setEnabledMetroGroups(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) { next.delete(id) } else { next.add(id) }
+      return next
+    })
+  }, [])
   const [selectedIncidentId, setSelectedIncidentId] = useState<string | null>(null)
   const [selectedMetroId, setSelectedMetroId] = useState<string | null>(null)
 
@@ -56,7 +66,13 @@ export default function App() {
   const { updates: metroUpdates, loading: metroLoading, error: metroError, lastUpdated: metroUpdated, refresh: metroRefresh } = useMetroTransit()
 
   const filteredMetroUpdates = useMemo(() => {
-    const ALLOWED_ROUTES = new Set(['8', '11', '14', '60', '73', '84', '87', '211'])
+    const ALLOWED_ROUTES = new Set([
+      '8', '11', '14', '60', '73', '84', '87', '211',
+      '20', '40', '41', '54', '82', '85',
+      '102', '108', '137', '151',
+      '209', '219', '229', '249', '259', '269',
+      '500',
+    ])
     return metroUpdates.filter(update => {
       if (!update.routeId || !update.tripId) return false
       // Rail routes (scheduled from static GTFS) — always include
@@ -67,6 +83,22 @@ export default function App() {
       return ALLOWED_ROUTES.has(normalized)
     })
   }, [metroUpdates])
+
+  const mapMetroUpdates = useMemo(() => {
+    return filteredMetroUpdates.filter(update => {
+      for (const group of ROUTE_GROUPS) {
+        if (!enabledMetroGroups.has(group.id)) continue
+        const rail = update.routeType === 0 || update.routeType === 1 || update.routeType === 2
+        if (group.routes === null) {
+          if (rail) return true
+        } else {
+          const num = String(update.routeShortName ?? update.routeId ?? '').replace(/^0+/, '')
+          if (!rail && group.routes.has(num)) return true
+        }
+      }
+      return false
+    })
+  }, [filteredMetroUpdates, enabledMetroGroups])
 
   useEffect(() => {
     const timer = setInterval(() => setClock(new Date()), 1000)
@@ -231,6 +263,8 @@ export default function App() {
                 if (id) setSelectedIncidentId(null)
               }}
               onRefresh={metroRefresh}
+              enabledGroups={enabledMetroGroups}
+              onToggleGroup={toggleMetroGroup}
             />
           </div>
         </div>
@@ -250,7 +284,7 @@ export default function App() {
               if (id) setSelectedMetroId(null)
             }}
             segments={segments}
-            metroUpdates={filteredMetroUpdates}
+            metroUpdates={mapMetroUpdates}
             selectedMetroId={selectedMetroId}
             onMetroSelect={id => {
               setSelectedMetroId(id)

@@ -3,6 +3,7 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { fileURLToPath, URL } from 'node:url'
 import type { IncomingMessage, ServerResponse } from 'node:http'
+import https from 'node:https'
 
 function metroGtfsPlugin(apiKey?: string): Plugin {
   return {
@@ -25,16 +26,30 @@ function metroGtfsPlugin(apiKey?: string): Plugin {
         }
 
         try {
-          const upstream = await fetch(`https://api.ridemetro.org/GtfsRealtime/${feed}`, {
-            headers: {
-              'Ocp-Apim-Subscription-Key': apiKey,
-            },
+          await new Promise<void>((resolve, reject) => {
+            const req = https.get(
+              {
+                hostname: 'api.ridemetro.org',
+                path: `/GtfsRealtime/${feed}`,
+                headers: { 'Ocp-Apim-Subscription-Key': apiKey },
+                rejectUnauthorized: false,
+              },
+              (upstream) => {
+                const chunks: Buffer[] = []
+                upstream.on('data', (chunk: Buffer) => chunks.push(chunk))
+                upstream.on('end', () => {
+                  const body = Buffer.concat(chunks)
+                  res.statusCode = upstream.statusCode ?? 200
+                  res.setHeader('Content-Type', upstream.headers['content-type'] ?? 'application/x-google-protobuf')
+                  res.setHeader('Cache-Control', 'no-store')
+                  res.end(body)
+                  resolve()
+                })
+                upstream.on('error', reject)
+              }
+            )
+            req.on('error', reject)
           })
-          const body = Buffer.from(await upstream.arrayBuffer())
-          res.statusCode = upstream.status
-          res.setHeader('Content-Type', upstream.headers.get('content-type') ?? 'application/x-google-protobuf')
-          res.setHeader('Cache-Control', 'no-store')
-          res.end(body)
         } catch (error) {
           res.statusCode = 502
           res.setHeader('Content-Type', 'text/plain')
