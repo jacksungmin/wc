@@ -77,6 +77,55 @@ export interface WorldCupMatch {
   awayScore?: number
 }
 
+export interface TranStarSegmentDetail {
+  ft: string
+  speedMph: number
+  travelSec: number
+  delaySec: number
+  lengthMi: number
+}
+
+export interface TranStarCorridor {
+  label: string
+  rd: string
+  dir: string
+  travelMin: number
+  delayMin: number
+  avgSpeed: number
+  segments: TranStarSegmentDetail[]
+  camHighway: string | null
+}
+
+export interface TranStarIncident {
+  id: string
+  location: string
+  desc: string
+  vehicles: number
+  lanes: string
+  status: string
+  time: string
+  date: string
+  lat: number
+  lng: number
+}
+
+export interface TranStarLaneClosure {
+  id: string
+  location: string
+  roadway: string
+  lanes: string
+  duration: string
+  detour: string
+  status: string
+  agency: string
+  hotspot: boolean
+  project: string
+  lat: number
+  lng: number
+  startTime: string
+  endTime: string
+}
+
 export interface MetroTripUpdate {
   id: string
   routeId: string

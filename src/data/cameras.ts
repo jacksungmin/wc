@@ -547,15 +547,6 @@ export const DRIVETEXAS_CAMERAS: TrafficCamera[] = [
     lng: -95.459848,
     streamUrl: 'https://s70.us-east-1.skyvdn.com/rtplive/TX_HOU_1008/playlist.m3u8',
   },
-  {
-    id: 'TX_HOU_1011',
-    name: 'IH610 @ MM3 PCMS',
-    highway: 'IH610',
-    direction: 'East',
-    lat: 29.679272,
-    lng: -95.436200,
-    streamUrl: 'https://s75.us-east-1.skyvdn.com/rtplive/TX_HOU_1011/playlist.m3u8',
-  },
 ]
 
 export const TRANSTAR_CAMERAS: TrafficCamera[] = []

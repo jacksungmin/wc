@@ -16,6 +16,10 @@
   function = "api-proxy"
 
 [[edge_functions]]
+  path = "/transtar-api/*"
+  function = "api-proxy"
+
+[[edge_functions]]
   path = "/transtar-cams/*"
   function = "api-proxy"
 

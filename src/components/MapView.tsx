@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import L from 'leaflet'
-import { Bus, Camera, Car, CloudSun, Home, Layers, Map as MapIcon, Mountain, Satellite, TrainFront, X } from 'lucide-react'
+import { AlertTriangle, Bus, Camera, Car, CloudSun, Home, Layers, Map as MapIcon, Mountain, Satellite, TrainFront, X } from 'lucide-react'
 import 'leaflet/dist/leaflet.css'
-import type { TrafficCamera, InrixIncident, InrixSegment, MetroTripUpdate } from '@/types'
+import type { TrafficCamera, InrixIncident, InrixSegment, MetroTripUpdate, TranStarIncident, TranStarLaneClosure } from '@/types'
 
 interface MapViewProps {
   cameras: TrafficCamera[]
@@ -17,6 +17,10 @@ interface MapViewProps {
   metroUpdates: MetroTripUpdate[]
   selectedMetroId: string | null
   onMetroSelect: (id: string | null) => void
+  transtarIncidents: TranStarIncident[]
+  transtarLaneClosures: TranStarLaneClosure[]
+  selectedTranStarId: string | null
+  onTranStarSelect: (id: string | null) => void
 }
 
 const NRG_CENTER: [number, number] = [29.6847, -95.4107]
@@ -108,6 +112,41 @@ function incidentIcon(type: string, severity: number, selected = false) {
     className: '',
     iconSize: [size + ring * 2, size + ring * 2],
     iconAnchor: [size / 2 + ring, size / 2 + ring],
+  })
+}
+
+function transtarIncidentIcon(desc: string, selected = false) {
+  const bg = selected ? '#2563eb' : '#7c3aed'
+  const label =
+    /stall/i.test(desc) ? 'S' :
+    /accident|crash/i.test(desc) ? 'A' :
+    /fire/i.test(desc) ? 'F' :
+    /debris/i.test(desc) ? 'D' :
+    /flood/i.test(desc) ? 'W' : '!'
+  const size = selected ? 16 : 11
+  const ring = selected ? 5 : 3
+  return L.divIcon({
+    html: `<div style="width:${size}px;height:${size}px;background:${bg};border:1.5px solid rgba(255,255,255,.92);border-radius:3px;transform:rotate(45deg);display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 ${ring}px ${bg}28,0 2px 7px rgba(0,0,0,.28);cursor:pointer"><span style="transform:rotate(-45deg);color:#fff;font:700 ${size <= 11 ? 5 : 7}px/1 Inter,Arial,sans-serif">${label}</span></div>`,
+    className: '',
+    iconSize: [size + ring * 2, size + ring * 2],
+    iconAnchor: [size / 2 + ring, size / 2 + ring],
+  })
+}
+
+function transtarClosureIcon(hotspot: boolean, selected = false) {
+  const fill = selected ? '#2563eb' : hotspot ? '#f59e0b' : '#d97706'
+  const glow = selected ? '#2563eb' : hotspot ? '#f59e0b' : '#d97706'
+  const s = selected ? 28 : 22
+  // Equilateral triangle points centred in the SVG viewBox (32×32)
+  const pts = '16,3 31,29 1,29'
+  return L.divIcon({
+    html: `<svg xmlns="http://www.w3.org/2000/svg" width="${s}" height="${s}" viewBox="0 0 32 32" style="cursor:pointer;filter:drop-shadow(0 0 ${selected ? 6 : 3}px ${glow}90) drop-shadow(0 2px 4px rgba(0,0,0,.5))">
+      <polygon points="${pts}" fill="${fill}" stroke="rgba(255,255,255,0.92)" stroke-width="2.2" stroke-linejoin="round"/>
+      <text x="16" y="24" text-anchor="middle" font-family="Inter,Arial,sans-serif" font-weight="800" font-size="${selected ? 13 : 11}" fill="rgba(255,255,255,0.95)">!</text>
+    </svg>`,
+    className: '',
+    iconSize: [s, s],
+    iconAnchor: [s / 2, s * 0.85],
   })
 }
 
@@ -252,12 +291,13 @@ function metroRouteLabel(update: MetroTripUpdate) {
   return update.routeLongName ? `${shortName} - ${update.routeLongName}` : `Route ${shortName}`
 }
 
-export function MapView({ cameras, selectedCameraId, onCameraSelect, camerasEnabled, onCamerasEnabledChange, incidents, selectedIncidentId, onIncidentSelect, segments, metroUpdates, selectedMetroId, onMetroSelect }: MapViewProps) {
+export function MapView({ cameras, selectedCameraId, onCameraSelect, camerasEnabled, onCamerasEnabledChange, incidents, selectedIncidentId, onIncidentSelect, segments, metroUpdates, selectedMetroId, onMetroSelect, transtarIncidents, transtarLaneClosures, selectedTranStarId, onTranStarSelect }: MapViewProps) {
   const [mapType, setMapType] = useState<BaseMapType>('satellite')
   const [switcherOpen, setSwitcherOpen] = useState(false)
   const [trafficEnabled, setTrafficEnabled] = useState(true)
   const [goesEnabled, setGoesEnabled] = useState(false)
   const [metroEnabled, setMetroEnabled] = useState(true)
+  const [transtarEnabled, setTranstarEnabled] = useState(true)
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<L.Map | null>(null)
   const baseLayerRef = useRef<L.Layer | null>(null)
@@ -270,6 +310,8 @@ export function MapView({ cameras, selectedCameraId, onCameraSelect, camerasEnab
   const incidentMarkersRef = useRef<Map<string, L.Marker>>(new Map())
   const metroLayerRef = useRef<L.LayerGroup | null>(null)
   const metroMarkersRef = useRef<Map<string, L.Marker>>(new Map())
+  const transtarLayerRef = useRef<L.LayerGroup | null>(null)
+  const transtarMarkersRef = useRef<Map<string, L.Marker>>(new Map())
 
   // Init map once
   useEffect(() => {
@@ -300,10 +342,11 @@ export function MapView({ cameras, selectedCameraId, onCameraSelect, camerasEnab
       { color: '#ffffff', weight: 2, opacity: 0.08, dashArray: '4 6' }
     ).addTo(map).bindTooltip('US-59 SW Freeway', { sticky: true, className: 'map-tooltip' })
 
-    // Layer groups for dynamic INRIX data
+    // Layer groups for dynamic data
     segmentLayerRef.current = L.layerGroup().addTo(map)
     incidentLayerRef.current = L.layerGroup().addTo(map)
     metroLayerRef.current = L.layerGroup().addTo(map)
+    transtarLayerRef.current = L.layerGroup().addTo(map)
 
     L.marker(NRG_CENTER, { icon: stadiumIcon(), zIndexOffset: 900 })
       .addTo(map)
@@ -518,7 +561,7 @@ export function MapView({ cameras, selectedCameraId, onCameraSelect, camerasEnab
 
   useEffect(() => {
     const map = mapRef.current
-    if (!map || selectedIncidentId || selectedMetroId || !hadFocusedSelectionRef.current) return
+    if (!map || selectedIncidentId || selectedMetroId || selectedTranStarId || !hadFocusedSelectionRef.current) return
 
     map.closePopup()
     map.flyTo(DEFAULT_CENTER, DEFAULT_ZOOM, {
@@ -526,8 +569,79 @@ export function MapView({ cameras, selectedCameraId, onCameraSelect, camerasEnab
       duration: 0.6,
     })
     hadFocusedSelectionRef.current = false
-  }, [selectedIncidentId, selectedMetroId])
+  }, [selectedIncidentId, selectedMetroId, selectedTranStarId])
 
+
+  // Update TranStar incident + lane closure markers
+  useEffect(() => {
+    const layer = transtarLayerRef.current
+    if (!layer) return
+    layer.clearLayers()
+    transtarMarkersRef.current.clear()
+
+    if (!transtarEnabled && !selectedTranStarId) return
+
+    const allItems: Array<{ id: string; lat: number; lng: number; type: 'incident' | 'closure'; data: TranStarIncident | TranStarLaneClosure }> = [
+      ...transtarIncidents.map(inc => ({ id: inc.id, lat: inc.lat, lng: inc.lng, type: 'incident' as const, data: inc })),
+      ...transtarLaneClosures.map(lc => ({ id: lc.id, lat: lc.lat, lng: lc.lng, type: 'closure' as const, data: lc })),
+    ]
+
+    const visible = transtarEnabled ? allItems : allItems.filter(item => item.id === selectedTranStarId)
+
+    visible.forEach(item => {
+      if (!item.lat || !item.lng) return
+      const selected = item.id === selectedTranStarId
+      let icon: L.DivIcon
+      let popupHtml: string
+
+      if (item.type === 'incident') {
+        const inc = item.data as TranStarIncident
+        icon = transtarIncidentIcon(inc.desc, selected)
+        popupHtml =
+          `<div style="font-family:monospace;font-size:11px;color:#e8edf5;min-width:180px">` +
+          `<b style="color:#a78bfa">TranStar · ${inc.desc || 'Incident'}</b><br>` +
+          `<span style="color:#c8d6e8">${inc.location}</span>` +
+          `${inc.lanes ? `<br><span style="color:#7a8ba8">Lanes: ${inc.lanes}</span>` : ''}` +
+          `${inc.status ? `<br><span style="color:#4a5a72">Status: ${inc.status}</span>` : ''}` +
+          `${inc.time ? `<br><span style="color:#4a5a72">${inc.time}</span>` : ''}` +
+          `</div>`
+      } else {
+        const lc = item.data as TranStarLaneClosure
+        icon = transtarClosureIcon(lc.hotspot, selected)
+        popupHtml =
+          `<div style="font-family:monospace;font-size:11px;color:#e8edf5;min-width:180px">` +
+          `<b style="color:#fbbf24">Lane Closure · ${lc.roadway || lc.location}</b><br>` +
+          `<span style="color:#c8d6e8">${lc.location}</span>` +
+          `${lc.lanes ? `<br><span style="color:#7a8ba8">Lanes: ${lc.lanes}</span>` : ''}` +
+          `${lc.agency ? `<br><span style="color:#4a5a72">Agency: ${lc.agency}</span>` : ''}` +
+          `${lc.detour ? `<br><span style="color:#4a5a72">Detour: ${lc.detour}</span>` : ''}` +
+          `${lc.endTime ? `<br><span style="color:#4a5a72">Until: ${lc.endTime}</span>` : ''}` +
+          `</div>`
+      }
+
+      const marker = L.marker([item.lat, item.lng], { icon })
+        .addTo(layer)
+        .bindPopup(popupHtml, { className: 'nrg-popup', closeOnClick: false, autoClose: false })
+      marker.on('click', () => onTranStarSelect(item.id === selectedTranStarId ? null : item.id))
+      transtarMarkersRef.current.set(item.id, marker)
+      if (selected) marker.openPopup()
+    })
+  }, [transtarIncidents, transtarLaneClosures, selectedTranStarId, onTranStarSelect, transtarEnabled])
+
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !selectedTranStarId) return
+    const allItems = [
+      ...transtarIncidents.map(inc => ({ id: inc.id, lat: inc.lat, lng: inc.lng })),
+      ...transtarLaneClosures.map(lc => ({ id: lc.id, lat: lc.lat, lng: lc.lng })),
+    ]
+    const item = allItems.find(i => i.id === selectedTranStarId)
+    if (!item?.lat || !item.lng) return
+    transtarMarkersRef.current.get(selectedTranStarId)?.openPopup()
+    map.flyTo([item.lat, item.lng], Math.max(map.getZoom(), 15), { animate: true, duration: 0.6 })
+    window.setTimeout(() => { transtarMarkersRef.current.get(selectedTranStarId)?.openPopup() }, 650)
+    hadFocusedSelectionRef.current = true
+  }, [transtarIncidents, transtarLaneClosures, selectedTranStarId])
 
   // Update camera markers
   useEffect(() => {
@@ -714,6 +828,43 @@ export function MapView({ cameras, selectedCameraId, onCameraSelect, camerasEnab
                   className={[
                     'block w-4 h-4 rounded-full bg-white shadow transition-transform',
                     metroEnabled ? 'translate-x-4' : 'translate-x-0',
+                  ].join(' ')}
+                />
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setTranstarEnabled(v => !v)}
+              className="w-full flex items-center justify-between rounded-md px-2 py-2 hover:bg-black/[0.04] transition-colors"
+            >
+              <span className="flex items-center gap-2">
+                <span
+                  className={[
+                    'w-10 h-10 rounded-md border flex items-center justify-center',
+                    transtarEnabled ? 'border-[#00838f] bg-[#e5f5f7] text-[#00838f]' : 'border-black/10 bg-[#f1f3f4] text-[#5f6368]',
+                  ].join(' ')}
+                >
+                  <AlertTriangle size={19} />
+                </span>
+                <span>
+                  <span className={`block text-[13px] ${transtarEnabled ? 'text-[#00838f] font-medium' : 'text-[#3c4043]'}`}>
+                    TranStar Incidents
+                  </span>
+                  <span className="block text-[10px] text-[#70757a] leading-tight">
+                    Incidents &amp; lane closures
+                  </span>
+                </span>
+              </span>
+              <span
+                className={[
+                  'w-9 h-5 rounded-full p-0.5 transition-colors',
+                  transtarEnabled ? 'bg-[#00838f]' : 'bg-[#dadce0]',
+                ].join(' ')}
+              >
+                <span
+                  className={[
+                    'block w-4 h-4 rounded-full bg-white shadow transition-transform',
+                    transtarEnabled ? 'translate-x-4' : 'translate-x-0',
                   ].join(' ')}
                 />
               </span>

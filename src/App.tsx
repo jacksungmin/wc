@@ -5,10 +5,12 @@ import { CameraGrid } from '@/components/CameraGrid'
 import { StatusTicker } from '@/components/StatusTicker'
 import { IncidentList } from '@/components/IncidentList'
 import { MetroTransitPanel, ROUTE_GROUPS } from '@/components/MetroTransitPanel'
+import { RouteMonitor } from '@/components/RouteMonitor'
 import { UserGuide } from '@/components/UserGuide'
 import { useWeather } from '@/hooks/useWeather'
 import { useInrix } from '@/hooks/useInrix'
 import { useMetroTransit } from '@/hooks/useMetroTransit'
+import { useTranStar } from '@/hooks/useTranStar'
 import { NRG_MATCHES } from '@/data/matches'
 import { ALL_CAMERAS, MAP_CAMERAS } from '@/data/cameras'
 
@@ -48,6 +50,7 @@ export default function App() {
   }, [])
   const [selectedIncidentId, setSelectedIncidentId] = useState<string | null>(null)
   const [selectedMetroId, setSelectedMetroId] = useState<string | null>(null)
+  const [selectedTranStarId, setSelectedTranStarId] = useState<string | null>(null)
 
   const handleCameraSelect = useCallback((id: string | null) => {
     setSelectedCameraId(id)
@@ -67,6 +70,7 @@ export default function App() {
   const { observation, alerts, loading: wxLoading } = useWeather()
   const { incidents, segments, connected, loading: inrixLoading, error: inrixError, lastUpdated: inrixUpdated, refresh: inrixRefresh } = useInrix()
   const { updates: metroUpdates, loading: metroLoading, error: metroError, lastUpdated: metroUpdated, refresh: metroRefresh } = useMetroTransit()
+  const { incidents: transtarIncidents, laneClosures: transtarLaneClosures, corridors: transtarCorridors, connected: transtarConnected, loading: transtarLoading, error: transtarError, lastUpdated: transtarUpdated, refresh: transtarRefresh } = useTranStar()
 
   const filteredMetroUpdates = useMemo(() => {
     const ALLOWED_ROUTES = new Set([
@@ -261,13 +265,12 @@ export default function App() {
       {/* ── Main content ── */}
       <div className="flex flex-1 overflow-hidden">
 
-        {/* Left panel: Match schedule + METRO (desktop only) */}
+        {/* Left panel: Match schedule + METRO + Route Monitor (desktop only) */}
         <div className="hidden lg:flex w-[388px] flex-shrink-0 flex-col border-r border-white/[0.06] overflow-hidden">
-          <div className="overflow-hidden border-b border-white/[0.06]" style={{ height: '30%' }}>
+          <div className="overflow-hidden border-b border-white/[0.06]" style={{ height: '28%' }}>
             <MatchSchedule matches={NRG_MATCHES} />
           </div>
-          <div className="h-2 flex-shrink-0 bg-transparent" />
-          <div className="overflow-hidden" style={{ height: 'calc(70% - 0.5rem)' }}>
+          <div className="overflow-hidden border-b border-white/[0.06]" style={{ height: '48%' }}>
             <MetroTransitPanel
               updates={filteredMetroUpdates}
               selectedId={selectedMetroId}
@@ -281,6 +284,13 @@ export default function App() {
               onRefresh={metroRefresh}
               enabledGroups={enabledMetroGroups}
               onToggleGroup={toggleMetroGroup}
+            />
+          </div>
+          <div className="overflow-hidden" style={{ height: '24%' }}>
+            <RouteMonitor
+              corridors={transtarCorridors}
+              loading={transtarLoading}
+              onCameraSelect={handleCameraSelect}
             />
           </div>
         </div>
@@ -305,6 +315,13 @@ export default function App() {
             onMetroSelect={id => {
               setSelectedMetroId(id)
               if (id) setSelectedIncidentId(null)
+            }}
+            transtarIncidents={transtarIncidents}
+            transtarLaneClosures={transtarLaneClosures}
+            selectedTranStarId={selectedTranStarId}
+            onTranStarSelect={id => {
+              setSelectedTranStarId(id)
+              if (id) { setSelectedIncidentId(null); setSelectedMetroId(null) }
             }}
           />
 
@@ -429,20 +446,32 @@ export default function App() {
                 if (id) setSelectedMetroId(null)
               }}
               onRefresh={inrixRefresh}
+              transtarIncidents={transtarIncidents}
+              transtarLaneClosures={transtarLaneClosures}
+              transtarConnected={transtarConnected}
+              transtarLoading={transtarLoading}
+              transtarError={transtarError}
+              transtarLastUpdated={transtarUpdated}
+              selectedTranStarId={selectedTranStarId}
+              onTranStarSelect={id => {
+                setSelectedTranStarId(id)
+                if (id) { setSelectedIncidentId(null); setSelectedMetroId(null) }
+              }}
+              onTranStarRefresh={transtarRefresh}
             />
           </div>
         </div>
 
         {/* Right: Camera grid + INRIX traffic (desktop only) */}
         <div className="hidden lg:flex w-80 flex-shrink-0 border-l border-white/[0.06] overflow-hidden flex-col">
-          <div className="overflow-hidden border-b border-white/[0.06]" style={{ height: '68%' }}>
+          <div className="overflow-hidden border-b border-white/[0.06]" style={{ height: '58%' }}>
             <CameraGrid
               cameras={sortedCameras}
               selectedId={selectedCameraId}
               onSelect={handleCameraSelect}
             />
           </div>
-          <div className="overflow-hidden" style={{ height: '32%' }}>
+          <div className="overflow-hidden" style={{ height: '42%' }}>
             <IncidentList
               incidents={incidents}
               selectedId={selectedIncidentId}
@@ -455,6 +484,18 @@ export default function App() {
                 if (id) setSelectedMetroId(null)
               }}
               onRefresh={inrixRefresh}
+              transtarIncidents={transtarIncidents}
+              transtarLaneClosures={transtarLaneClosures}
+              transtarConnected={transtarConnected}
+              transtarLoading={transtarLoading}
+              transtarError={transtarError}
+              transtarLastUpdated={transtarUpdated}
+              selectedTranStarId={selectedTranStarId}
+              onTranStarSelect={id => {
+                setSelectedTranStarId(id)
+                if (id) { setSelectedIncidentId(null); setSelectedMetroId(null) }
+              }}
+              onTranStarRefresh={transtarRefresh}
             />
           </div>
         </div>
@@ -494,6 +535,9 @@ export default function App() {
           metroUpdates={filteredMetroUpdates}
           liveFeeds={ALL_CAMERAS.length}
           nextMatch={nextMatch ?? null}
+          transtarIncidents={transtarIncidents}
+          transtarLaneClosures={transtarLaneClosures}
+          transtarCorridors={transtarCorridors}
         />
       </div>
 

@@ -27,6 +27,10 @@ const ROUTES: Record<string, Route> = {
   '/metro-static/google_transit.zip': {
     fixed: 'https://metro.resourcespace.com/pages/download.php?ref=4835&ext=zip',
   },
+  '/transtar-api/': {
+    base: 'https://traffic.houstontranstar.org/api/',
+    headers: { 'Referer': 'https://traffic.houstontranstar.org/' },
+  },
   '/transtar-cams/': {
     base: 'https://traffic.houstontranstar.org/layers/cameras/images/',
     headers: { 'Referer': 'https://traffic.houstontranstar.org/' },

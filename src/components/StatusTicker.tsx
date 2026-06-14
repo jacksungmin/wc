@@ -1,4 +1,13 @@
-import type { InrixIncident, MetroTripUpdate, WeatherAlert, WorldCupMatch } from '@/types'
+import type { InrixIncident, MetroTripUpdate, TranStarCorridor, TranStarIncident, TranStarLaneClosure, WeatherAlert, WorldCupMatch } from '@/types'
+
+function transtarIncidentEmoji(desc: string): string {
+  if (/accident|crash/i.test(desc)) return '💥'
+  if (/fire/i.test(desc)) return '🔥'
+  if (/stall/i.test(desc)) return '🚗'
+  if (/debris/i.test(desc)) return '⚠️'
+  if (/flood/i.test(desc)) return '🌊'
+  return '🟣'
+}
 
 interface StatusTickerProps {
   alerts: WeatherAlert[]
@@ -6,6 +15,9 @@ interface StatusTickerProps {
   metroUpdates: MetroTripUpdate[]
   liveFeeds: number
   nextMatch: WorldCupMatch | null
+  transtarIncidents: TranStarIncident[]
+  transtarLaneClosures: TranStarLaneClosure[]
+  transtarCorridors: TranStarCorridor[]
 }
 
 export function StatusTicker({
@@ -14,6 +26,9 @@ export function StatusTicker({
   metroUpdates,
   liveFeeds,
   nextMatch,
+  transtarIncidents,
+  transtarLaneClosures,
+  transtarCorridors,
 }: StatusTickerProps) {
   const metroRouteCount = new Set(metroUpdates.map(update => update.routeId).filter(Boolean)).size
   const positionedMetroCount = metroUpdates.filter(update => update.lat && update.lng).length
@@ -22,11 +37,43 @@ export function StatusTicker({
   const busTrips = metroUpdates.filter(u => !u.isScheduled).length
   const railDepartures = metroUpdates.filter(u => u.isScheduled).length
 
+  const hotspotClosures = transtarLaneClosures.filter(lc => lc.hotspot)
+
+  const liveCorridors = transtarCorridors.filter(c => c.travelMin > 0)
+  const delayedCorridors = liveCorridors.filter(c => c.delayMin > 1)
+
+  const corridorSummary = liveCorridors.length > 0
+    ? `⚽ NRG Route Monitor — ${liveCorridors.map(c =>
+        `${c.label} ${c.dir}: ${c.travelMin}m${c.delayMin > 1 ? ` (+${c.delayMin}m delay)` : ' on time'}`
+      ).join(' · ')}`
+    : '⚽ NRG Route Monitor — No live corridor data'
+
+  const corridorItems: string[] = [
+    corridorSummary,
+    ...delayedCorridors.map(c =>
+      `⚠️ Delay on ${c.label} ${c.dir} to NRG Stadium — ${c.travelMin}m travel · +${c.delayMin}m delay · avg ${c.avgSpeed} mph`
+    ),
+  ]
+
+  const transtarItems: string[] = [
+    transtarIncidents.length > 0 || transtarLaneClosures.length > 0
+      ? `TranStar Live — ${transtarIncidents.length} active incident${transtarIncidents.length !== 1 ? 's' : ''} · ${transtarLaneClosures.length} lane closure${transtarLaneClosures.length !== 1 ? 's' : ''}${hotspotClosures.length > 0 ? ` · ${hotspotClosures.length} hotspot${hotspotClosures.length !== 1 ? 's' : ''}` : ''}`
+      : 'TranStar Live — No active incidents or closures',
+    ...transtarIncidents.map(inc =>
+      `${transtarIncidentEmoji(inc.desc)} TranStar: ${inc.desc || 'Incident'} — ${inc.location}${inc.status ? ` (${inc.status})` : ''}${inc.time ? ` · ${inc.time}` : ''}`
+    ),
+    ...hotspotClosures.map(lc =>
+      `🚧 Hotspot Closure: ${lc.roadway || lc.location}${lc.lanes ? ` · ${lc.lanes}` : ''}${lc.agency ? ` · ${lc.agency}` : ''}${lc.endTime ? ` · Until ${lc.endTime}` : ''}`
+    ),
+  ]
+
   const items = [
     alerts.length > 0
       ? `${alerts.length} active weather alert${alerts.length !== 1 ? 's' : ''}: ${alerts.map(a => a.event).join(', ')}`
       : 'No active weather alerts for Houston',
-    `${incidents.length} traffic incident${incidents.length !== 1 ? 's' : ''} in the 2-hour window${majorIncidentCount > 0 ? ` · ${majorIncidentCount} high severity` : ''}`,
+    `INRIX — ${incidents.length} traffic incident${incidents.length !== 1 ? 's' : ''} in the 2-hour window${majorIncidentCount > 0 ? ` · ${majorIncidentCount} high severity` : ''}`,
+    ...transtarItems,
+    ...corridorItems,
     `METRO Live Transit — ${metroRouteCount} active route${metroRouteCount !== 1 ? 's' : ''} · ${busTrips} live bus trip${busTrips !== 1 ? 's' : ''} · ${railDepartures} scheduled rail departure${railDepartures !== 1 ? 's' : ''} · ${positionedMetroCount} mapped`,
     `METRO panel: 6 route groups (METROrail · NRG Stadium · Fan Festival · Airport · Park & Ride · Local) · use eye icon to show or hide each group on the map`,
     `${liveFeeds} live camera feed${liveFeeds !== 1 ? 's' : ''} available · enable Cameras layer in Map Details to show all pins on the map`,
@@ -43,7 +90,7 @@ export function StatusTicker({
     <div className="flex items-center h-7 bg-[#060a12] border-t border-white/[0.06] overflow-hidden flex-shrink-0">
       <div className="flex-shrink-0 px-2.5 border-r border-white/[0.06]">
         <span className="text-[8px] font-mono tracking-[0.15em] text-[#4a5a72] uppercase">
-          {alerts.length > 0 || majorIncidentCount > 0 ? 'LIVE ALERTS' : 'STATUS'}
+          {alerts.length > 0 || majorIncidentCount > 0 || transtarIncidents.length > 0 ? 'LIVE ALERTS' : 'STATUS'}
         </span>
       </div>
 
