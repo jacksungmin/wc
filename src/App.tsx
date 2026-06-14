@@ -34,11 +34,12 @@ function MapFlagBadge({ label, code }: { label: string; code?: string }) {
 }
 
 type MobileTab = 'map' | 'schedule' | 'transit' | 'routes' | 'cameras' | 'traffic'
+const DEFAULT_CAMERA_ID = 'TX_HOU_326'
 
 export default function App() {
   const [showGuide, setShowGuide] = useState(false)
   const [mobileTab, setMobileTab] = useState<MobileTab>('map')
-  const [selectedCameraId, setSelectedCameraId] = useState<string | null>('TX_HOU_327')
+  const [selectedCameraId, setSelectedCameraId] = useState<string | null>(DEFAULT_CAMERA_ID)
   const [camerasEnabled, setCamerasEnabled] = useState(false)
   const [enabledMetroGroups, setEnabledMetroGroups] = useState<Set<string>>(
     () => new Set(ROUTE_GROUPS.map(g => g.id))
@@ -67,6 +68,8 @@ export default function App() {
   const NRG_LNG = -95.4107
   const sortedCameras = useMemo(() =>
     [...ALL_CAMERAS].sort((a, b) => {
+      if (a.id === DEFAULT_CAMERA_ID) return -1
+      if (b.id === DEFAULT_CAMERA_ID) return 1
       const distA = (a.lat - NRG_LAT) ** 2 + (a.lng - NRG_LNG) ** 2
       const distB = (b.lat - NRG_LAT) ** 2 + (b.lng - NRG_LNG) ** 2
       return distA - distB
