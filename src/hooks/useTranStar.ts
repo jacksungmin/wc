@@ -10,13 +10,13 @@ const SEGMENTS_URL = `/transtar-api/speedsegments${SUFFIX}.json`
 const REFRESH_MS = 60_000
 
 // Key game-day corridors to NRG Stadium
-const CORRIDOR_DEFS: { label: string; rd: string; dir: string; camHighway: string | null }[] = [
-  { label: 'IH-610 S Loop', rd: 'IH-610 South Loop', dir: 'WB', camHighway: 'I-610 South Loop' },
-  { label: 'IH-610 S Loop', rd: 'IH-610 South Loop', dir: 'EB', camHighway: 'I-610 South Loop' },
-  { label: 'IH-610 W Loop', rd: 'IH-610 West Loop',  dir: 'SB', camHighway: 'I-610 West Loop'  },
-  { label: 'US-59 SW',      rd: 'US-59 Southwest',   dir: 'NB', camHighway: null               },
-  { label: 'SH-288',        rd: 'SH-288',             dir: 'NB', camHighway: 'SH-288'           },
-  { label: 'IH-45 Gulf',    rd: 'IH-45 Gulf',         dir: 'NB', camHighway: 'IH-45 Gulf'       },
+const CORRIDOR_DEFS: { label: string; rd: string; dir: string; group: 'to' | 'from'; camHighway: string | null }[] = [
+  { label: 'IH-610 S Loop', rd: 'IH-610 South Loop', dir: 'WB', group: 'to',   camHighway: 'I-610 South Loop' },
+  { label: 'IH-610 W Loop', rd: 'IH-610 West Loop',  dir: 'SB', group: 'to',   camHighway: 'I-610 West Loop'  },
+  { label: 'US-59 SW',      rd: 'US-59 Southwest',   dir: 'NB', group: 'to',   camHighway: null               },
+  { label: 'IH-610 S Loop', rd: 'IH-610 South Loop', dir: 'EB', group: 'from', camHighway: 'I-610 South Loop' },
+  { label: 'SH-288',        rd: 'SH-288',             dir: 'NB', group: 'from', camHighway: 'SH-288'           },
+  { label: 'IH-45 Gulf',    rd: 'IH-45 Gulf',         dir: 'NB', group: 'from', camHighway: 'IH-45 Gulf'       },
 ]
 
 // Bounding box ~10 miles around NRG Stadium (29.6847, -95.4107)
@@ -112,6 +112,7 @@ function buildCorridors(rawSegs: any[]): TranStarCorridor[] {
       label: def.label,
       rd: def.rd,
       dir: def.dir,
+      group: def.group,
       travelMin: validTT.length > 0 ? Math.round(totalTTSec / 60) : -1,
       delayMin: Math.round(totalDlySec / 60),
       avgSpeed: Math.round(avgSpeed),

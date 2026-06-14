@@ -22,7 +22,7 @@ export function RouteMonitor({ corridors, loading, onCameraSelect }: RouteMonito
   return (
     <div className="flex flex-col h-full overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between px-3 py-1.5 border-b border-white/[0.06] flex-shrink-0">
+      <div className="flex items-center justify-between px-3 py-2 border-b border-white/[0.06] flex-shrink-0">
         <div className="flex items-center gap-1.5">
           <span className="text-[10px]">⚽</span>
           <span className="text-[9px] font-mono tracking-[0.12em] text-[#7a8ba8] uppercase">NRG Stadium Route Monitor</span>
@@ -31,37 +31,50 @@ export function RouteMonitor({ corridors, loading, onCameraSelect }: RouteMonito
       </div>
 
       {/* Corridor rows */}
-      <div className="flex-1 overflow-hidden px-2 py-1.5 flex flex-col gap-0.5">
+      <div className="flex-1 overflow-y-auto px-2 py-2 flex flex-col gap-1">
         {loading && corridors.length === 0 && (
-          <div className="text-[9px] font-mono text-[#4a5a72] text-center py-2">Loading routes…</div>
+          <div className="text-[9px] font-mono text-[#4a5a72] text-center py-3">Loading routes…</div>
         )}
-        {corridors.map((c, i) => {
-          const st = corridorStatus(c)
-          const noData = c.travelMin < 0
+        {(['to', 'from'] as const).map(group => {
+          const group_corridors = corridors.filter(c => c.group === group)
+          if (group_corridors.length === 0) return null
           return (
-            <button
-              key={i}
-              type="button"
-              onClick={() => setSelected(c)}
-              title="Click for segment detail"
-              className={[
-                'w-full flex items-center gap-2 px-2 py-1 rounded transition-colors hover:bg-white/[0.05] cursor-pointer',
-                st.bg,
-              ].join(' ')}
-            >
-              <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${st.dot}`} />
-              <span className="text-[8px] font-mono text-[#c8d6e8] flex-1 truncate text-left">{c.label}</span>
-              <span className="text-[7px] font-mono text-[#4a5a72] w-5 text-right">{c.dir}</span>
-              <span className="text-[8px] font-mono font-bold text-[#e8edf5] w-8 text-right">
-                {noData ? '—' : `${c.travelMin}m`}
-              </span>
-              <span className={`text-[7px] font-mono w-14 text-right tabular-nums ${
-                noData ? 'text-[#4a5a72]' :
-                c.delayMin > 0 ? 'text-orange-400' : 'text-emerald-500'
-              }`}>
-                {noData ? 'no data' : c.delayMin > 0 ? `+${c.delayMin}m dly` : 'on time'}
-              </span>
-            </button>
+            <div key={group} className="flex flex-col gap-0.5">
+              <div className="px-2 pt-1.5 pb-1">
+                <span className="text-[7px] font-mono tracking-[0.1em] uppercase text-[#4a5a72]">
+                  {group === 'to' ? '▶ To Stadium' : '◀ From Stadium'}
+                </span>
+              </div>
+              {group_corridors.map((c, i) => {
+                const st = corridorStatus(c)
+                const noData = c.travelMin < 0
+                return (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => setSelected(c)}
+                    title="Click for segment detail"
+                    className={[
+                      'w-full flex items-center gap-2 px-2 py-1.5 rounded transition-colors hover:bg-white/[0.05] cursor-pointer',
+                      st.bg,
+                    ].join(' ')}
+                  >
+                    <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${st.dot}`} />
+                    <span className="text-[8px] font-mono text-[#c8d6e8] flex-1 truncate text-left">{c.label}</span>
+                    <span className="text-[7px] font-mono text-[#4a5a72] w-5 text-right">{c.dir}</span>
+                    <span className="text-[8px] font-mono font-bold text-[#e8edf5] w-8 text-right">
+                      {noData ? '—' : `${c.travelMin}m`}
+                    </span>
+                    <span className={`text-[7px] font-mono w-14 text-right tabular-nums ${
+                      noData ? 'text-[#4a5a72]' :
+                      c.delayMin > 0 ? 'text-orange-400' : 'text-emerald-500'
+                    }`}>
+                      {noData ? 'no data' : c.delayMin > 0 ? `+${c.delayMin}m dly` : 'on time'}
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
           )
         })}
       </div>

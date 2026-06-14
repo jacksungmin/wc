@@ -286,7 +286,7 @@ export default function App() {
               onToggleGroup={toggleMetroGroup}
             />
           </div>
-          <div className="overflow-hidden" style={{ height: '24%' }}>
+          <div className="overflow-hidden" style={{ height: '28%' }}>
             <RouteMonitor
               corridors={transtarCorridors}
               loading={transtarLoading}

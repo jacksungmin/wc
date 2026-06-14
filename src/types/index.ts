@@ -89,6 +89,7 @@ export interface TranStarCorridor {
   label: string
   rd: string
   dir: string
+  group: 'to' | 'from'
   travelMin: number
   delayMin: number
   avgSpeed: number
