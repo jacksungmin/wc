@@ -13,6 +13,8 @@ import { useMetroTransit } from '@/hooks/useMetroTransit'
 import { useTranStar } from '@/hooks/useTranStar'
 import { NRG_MATCHES } from '@/data/matches'
 import { ALL_CAMERAS, MAP_CAMERAS } from '@/data/cameras'
+import { BusFront, CalendarDays, Cctv, Map as MapIcon, Route, TriangleAlert } from 'lucide-react'
+import type { MapExtent } from '@/types'
 
 function MapFlagBadge({ label, code }: { label: string; code?: string }) {
   return (
@@ -31,7 +33,7 @@ function MapFlagBadge({ label, code }: { label: string; code?: string }) {
   )
 }
 
-type MobileTab = 'map' | 'schedule' | 'transit' | 'cameras' | 'traffic'
+type MobileTab = 'map' | 'schedule' | 'transit' | 'routes' | 'cameras' | 'traffic'
 
 export default function App() {
   const [showGuide, setShowGuide] = useState(false)
@@ -51,9 +53,13 @@ export default function App() {
   const [selectedIncidentId, setSelectedIncidentId] = useState<string | null>(null)
   const [selectedMetroId, setSelectedMetroId] = useState<string | null>(null)
   const [selectedTranStarId, setSelectedTranStarId] = useState<string | null>(null)
+  const [mapExtent, setMapExtent] = useState<MapExtent | null>(null)
 
   const handleCameraSelect = useCallback((id: string | null) => {
     setSelectedCameraId(id)
+  }, [])
+  const handleMapExtentChange = useCallback((extent: MapExtent) => {
+    setMapExtent(extent)
   }, [])
   const [clock, setClock] = useState(new Date())
 
@@ -71,6 +77,26 @@ export default function App() {
   const { incidents, segments, connected, loading: inrixLoading, error: inrixError, lastUpdated: inrixUpdated, refresh: inrixRefresh } = useInrix()
   const { updates: metroUpdates, loading: metroLoading, error: metroError, lastUpdated: metroUpdated, refresh: metroRefresh } = useMetroTransit()
   const { incidents: transtarIncidents, laneClosures: transtarLaneClosures, corridors: transtarCorridors, connected: transtarConnected, loading: transtarLoading, error: transtarError, lastUpdated: transtarUpdated, refresh: transtarRefresh } = useTranStar()
+
+  const visibleTranStarLaneClosures = useMemo(() => {
+    if (!mapExtent) return transtarLaneClosures
+    return transtarLaneClosures.filter(closure =>
+      closure.lat <= mapExtent.north &&
+      closure.lat >= mapExtent.south &&
+      closure.lng <= mapExtent.east &&
+      closure.lng >= mapExtent.west
+    )
+  }, [transtarLaneClosures, mapExtent])
+
+  const visibleTranStarIncidents = useMemo(() => {
+    if (!mapExtent) return transtarIncidents
+    return transtarIncidents.filter(incident =>
+      incident.lat <= mapExtent.north &&
+      incident.lat >= mapExtent.south &&
+      incident.lng <= mapExtent.east &&
+      incident.lng >= mapExtent.west
+    )
+  }, [transtarIncidents, mapExtent])
 
   const filteredMetroUpdates = useMemo(() => {
     const ALLOWED_ROUTES = new Set([
@@ -123,11 +149,11 @@ export default function App() {
     : null
 
   return (
-    <div className="h-full flex flex-col bg-[#070c15] font-sans overflow-hidden relative">
+    <div className="h-full min-h-0 min-w-0 flex flex-col bg-[#070c15] font-sans overflow-hidden relative">
       {/* ── Header ── */}
-      <header className="flex items-center px-3 py-2 bg-[#09101e] border-b border-white/[0.06] flex-shrink-0 gap-2 md:gap-3 md:px-4">
+      <header className="app-header flex items-center px-2.5 py-2 bg-[#09101e] border-b border-white/[0.06] flex-shrink-0 gap-2 md:gap-3 md:px-4">
         {/* Left: Logo + Title */}
-        <div className="flex items-center gap-2 md:gap-3 flex-shrink-0 min-w-0">
+        <div className="app-brand flex items-center gap-2 md:gap-3 flex-shrink-0 min-w-0">
           <div className="flex items-center gap-2 min-w-0">
             <div className="w-7 h-7 flex-shrink-0 flex items-center justify-center overflow-hidden rounded-sm border border-white/30">
               <img src="/HGAC_logo.png" alt="H-GAC" className="w-full h-full object-contain" />
@@ -151,7 +177,7 @@ export default function App() {
         </div>
 
         {/* Center: Weather + Alerts (hidden on mobile) */}
-        <div className="hidden md:flex flex-1 items-center justify-center gap-3 min-w-0">
+        <div className="app-weather hidden md:flex flex-1 items-center justify-center gap-3 min-w-0">
           {/* Weather strip */}
           <div className="flex items-center gap-2 text-[10px] font-mono flex-shrink-0">
             {observation ? (
@@ -238,7 +264,7 @@ export default function App() {
         )}
 
         {/* Right: Incidents + Clock */}
-        <div className="flex items-center gap-2 md:gap-2.5 flex-shrink-0">
+        <div className="app-clock flex items-center gap-2 md:gap-2.5 flex-shrink-0">
           {criticalIncidents.length > 0 && (
             <div className="hidden sm:flex items-center gap-1.5 px-2 py-1 rounded bg-orange-500/10 border border-orange-500/20">
               <span className="w-1.5 h-1.5 rounded-full bg-orange-400 animate-pulse inline-block" />
@@ -263,10 +289,10 @@ export default function App() {
       </header>
 
       {/* ── Main content ── */}
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 min-h-0 min-w-0 overflow-hidden">
 
         {/* Left panel: Match schedule + METRO + Route Monitor (desktop only) */}
-        <div className="hidden lg:flex w-[388px] flex-shrink-0 flex-col border-r border-white/[0.06] overflow-hidden">
+        <div className="hidden xl:flex xl:w-[340px] 2xl:w-[388px] flex-shrink-0 flex-col border-r border-white/[0.06] overflow-hidden">
           <div className="overflow-hidden border-b border-white/[0.06]" style={{ height: '28%' }}>
             <MatchSchedule matches={NRG_MATCHES} />
           </div>
@@ -296,7 +322,7 @@ export default function App() {
         </div>
 
         {/* Center: Map (always rendered; mobile panels overlay on top) */}
-        <div className="flex-1 relative overflow-hidden">
+        <div className="flex-1 min-w-0 relative overflow-hidden">
           <MapView
             cameras={MAP_CAMERAS}
             selectedCameraId={selectedCameraId}
@@ -323,11 +349,12 @@ export default function App() {
               setSelectedTranStarId(id)
               if (id) { setSelectedIncidentId(null); setSelectedMetroId(null) }
             }}
+            onMapExtentChange={handleMapExtentChange}
           />
 
           {/* Next match overlay */}
           {nextMatch && (
-            <div className="absolute top-2 left-2 md:top-3 md:left-3 z-[1000] bg-[#09101e]/95 backdrop-blur-sm border border-white/[0.10] rounded p-2.5 md:p-3 max-w-[200px] md:max-w-[230px]">
+            <div className="absolute top-2 left-2 md:top-3 md:left-3 z-[1000] bg-[#09101e]/95 backdrop-blur-sm border border-white/[0.10] rounded p-2.5 md:p-3 w-[min(230px,calc(100%-5rem))]">
               <div className="text-[8px] font-mono tracking-[0.12em] text-[#4a5a72] uppercase mb-1.5">
                 Next at NRG · {nextMatch.stage}
               </div>
@@ -354,9 +381,10 @@ export default function App() {
             </div>
           )}
 
-          {/* Bus direction legend */}
-          {filteredMetroUpdates.length > 0 && (
-            <div className="absolute top-2 right-12 md:top-3 md:right-14 z-[1000] bg-[#09101e]/90 backdrop-blur-sm border border-white/[0.08] rounded px-2 md:px-2.5 py-1.5 md:py-2">
+          <div className="hidden sm:flex absolute top-3 right-14 z-[1000] flex-col items-end gap-2">
+            {/* Bus direction legend */}
+            {filteredMetroUpdates.length > 0 && (
+              <div className="bg-[#09101e]/90 backdrop-blur-sm border border-white/[0.08] rounded px-2.5 py-2">
               <div className="text-[8px] font-mono tracking-[0.1em] text-[#4a5a72] uppercase mb-1.5">Bus Direction</div>
               <div className="flex items-center gap-1.5 mb-0.5">
                 <span className="w-4 h-4 rounded flex items-center justify-center text-[7px] font-bold flex-shrink-0" style={{ background: '#0e7490', color: '#fff' }}>▲</span>
@@ -366,12 +394,12 @@ export default function App() {
                 <span className="w-4 h-4 rounded flex items-center justify-center text-[7px] font-bold flex-shrink-0" style={{ background: '#b45309', color: '#fff' }}>▼</span>
                 <span className="text-[8px] font-mono text-[#7a8ba8]">Inbound</span>
               </div>
-            </div>
-          )}
+              </div>
+            )}
 
-          {/* Traffic legend overlay */}
-          {segments.length > 0 && (
-            <div className="absolute top-2 right-12 md:top-3 md:right-14 z-[1000] bg-[#09101e]/90 backdrop-blur-sm border border-white/[0.08] rounded px-2 md:px-2.5 py-1.5 md:py-2">
+            {/* Traffic legend overlay */}
+            {segments.length > 0 && (
+              <div className="bg-[#09101e]/90 backdrop-blur-sm border border-white/[0.08] rounded px-2.5 py-2">
               <div className="text-[8px] font-mono tracking-[0.1em] text-[#4a5a72] uppercase mb-1.5">Traffic</div>
               {[
                 { color: '#22c55e', label: 'Free flow' },
@@ -387,11 +415,12 @@ export default function App() {
               <div className="text-[7px] font-mono text-[#4a5a72] mt-1 pt-1 border-t border-white/[0.05]">
                 {segments.length} segments · INRIX
               </div>
-            </div>
-          )}
+              </div>
+            )}
+          </div>
 
           {/* Camera count + incident mini badges */}
-          <div className="absolute bottom-2 left-2 md:bottom-8 md:left-3 z-[1000] flex items-center gap-2">
+          <div className="map-summary absolute bottom-2 left-2 right-2 md:bottom-8 md:left-3 md:right-auto z-[1000] flex flex-wrap items-center gap-1.5 md:gap-2 pointer-events-none">
             <div className="bg-[#09101e]/80 backdrop-blur-sm border border-white/[0.07] rounded px-2 md:px-2.5 py-1 md:py-1.5">
               <span className="text-[8px] font-mono text-[#4a5a72]">
                 📷 {ALL_CAMERAS.length} live feeds
@@ -406,11 +435,11 @@ export default function App() {
             )}
           </div>
 
-          {/* ── Mobile panel overlays (hidden on lg+) ── */}
-          <div className={`lg:hidden absolute inset-0 z-[1001] bg-[#070c15] overflow-hidden ${mobileTab === 'schedule' ? 'flex flex-col' : 'hidden'}`}>
+          {/* ── Mobile/tablet panel overlays (hidden on xl+) ── */}
+          <div className={`xl:hidden absolute inset-0 z-[1001] bg-[#070c15] overflow-hidden ${mobileTab === 'schedule' ? 'flex flex-col' : 'hidden'}`}>
             <MatchSchedule matches={NRG_MATCHES} />
           </div>
-          <div className={`lg:hidden absolute inset-0 z-[1001] bg-[#070c15] overflow-hidden ${mobileTab === 'transit' ? 'flex flex-col' : 'hidden'}`}>
+          <div className={`xl:hidden absolute inset-0 z-[1001] bg-[#070c15] overflow-hidden ${mobileTab === 'transit' ? 'flex flex-col' : 'hidden'}`}>
             <MetroTransitPanel
               updates={filteredMetroUpdates}
               selectedId={selectedMetroId}
@@ -426,14 +455,21 @@ export default function App() {
               onToggleGroup={toggleMetroGroup}
             />
           </div>
-          <div className={`lg:hidden absolute inset-0 z-[1001] bg-[#070c15] overflow-hidden ${mobileTab === 'cameras' ? 'flex flex-col' : 'hidden'}`}>
+          <div className={`xl:hidden absolute inset-0 z-[1001] bg-[#070c15] overflow-hidden ${mobileTab === 'routes' ? 'flex flex-col' : 'hidden'}`}>
+            <RouteMonitor
+              corridors={transtarCorridors}
+              loading={transtarLoading}
+              onCameraSelect={handleCameraSelect}
+            />
+          </div>
+          <div className={`xl:hidden absolute inset-0 z-[1001] bg-[#070c15] overflow-hidden ${mobileTab === 'cameras' ? 'flex flex-col' : 'hidden'}`}>
             <CameraGrid
               cameras={sortedCameras}
               selectedId={selectedCameraId}
               onSelect={handleCameraSelect}
             />
           </div>
-          <div className={`lg:hidden absolute inset-0 z-[1001] bg-[#070c15] overflow-hidden ${mobileTab === 'traffic' ? 'flex flex-col' : 'hidden'}`}>
+          <div className={`xl:hidden absolute inset-0 z-[1001] bg-[#070c15] overflow-hidden ${mobileTab === 'traffic' ? 'flex flex-col' : 'hidden'}`}>
             <IncidentList
               incidents={incidents}
               selectedId={selectedIncidentId}
@@ -446,8 +482,8 @@ export default function App() {
                 if (id) setSelectedMetroId(null)
               }}
               onRefresh={inrixRefresh}
-              transtarIncidents={transtarIncidents}
-              transtarLaneClosures={transtarLaneClosures}
+              transtarIncidents={visibleTranStarIncidents}
+              transtarLaneClosures={visibleTranStarLaneClosures}
               transtarConnected={transtarConnected}
               transtarLoading={transtarLoading}
               transtarError={transtarError}
@@ -463,7 +499,7 @@ export default function App() {
         </div>
 
         {/* Right: Camera grid + INRIX traffic (desktop only) */}
-        <div className="hidden lg:flex w-80 flex-shrink-0 border-l border-white/[0.06] overflow-hidden flex-col">
+        <div className="hidden xl:flex xl:w-[280px] 2xl:w-80 flex-shrink-0 border-l border-white/[0.06] overflow-hidden flex-col">
           <div className="overflow-hidden border-b border-white/[0.06]" style={{ height: '58%' }}>
             <CameraGrid
               cameras={sortedCameras}
@@ -484,8 +520,8 @@ export default function App() {
                 if (id) setSelectedMetroId(null)
               }}
               onRefresh={inrixRefresh}
-              transtarIncidents={transtarIncidents}
-              transtarLaneClosures={transtarLaneClosures}
+              transtarIncidents={visibleTranStarIncidents}
+              transtarLaneClosures={visibleTranStarLaneClosures}
               transtarConnected={transtarConnected}
               transtarLoading={transtarLoading}
               transtarError={transtarError}
@@ -501,34 +537,37 @@ export default function App() {
         </div>
       </div>
 
-      {/* ── Mobile bottom tab bar (hidden on lg+) ── */}
-      <nav className="lg:hidden flex items-stretch bg-[#09101e] border-t border-white/[0.08] flex-shrink-0" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+      {/* ── Mobile/tablet bottom tab bar (hidden on xl+) ── */}
+      <nav className="mobile-tabs xl:hidden flex items-stretch bg-[#09101e] border-t border-white/[0.08] flex-shrink-0" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }} aria-label="Dashboard sections">
         {([
-          { id: 'map',      label: 'Map',      icon: '🗺️' },
-          { id: 'schedule', label: 'Schedule', icon: '⚽' },
-          { id: 'transit',  label: 'Transit',  icon: '🚌' },
-          { id: 'cameras',  label: 'Cameras',  icon: '📷' },
-          { id: 'traffic',  label: 'Traffic',  icon: '⚠️' },
-        ] as { id: MobileTab; label: string; icon: string }[]).map(tab => (
+          { id: 'map',      label: 'Map',      icon: MapIcon },
+          { id: 'schedule', label: 'Schedule', icon: CalendarDays },
+          { id: 'transit',  label: 'Transit',  icon: BusFront },
+          { id: 'routes',   label: 'Routes',   icon: Route },
+          { id: 'cameras',  label: 'Cameras',  icon: Cctv },
+          { id: 'traffic',  label: 'Traffic',  icon: TriangleAlert },
+        ] as const).map(({ id, label, icon: Icon }) => (
           <button
-            key={tab.id}
+            key={id}
             type="button"
-            onClick={() => setMobileTab(tab.id)}
+            onClick={() => setMobileTab(id)}
             className={[
-              'flex-1 flex flex-col items-center justify-center py-2 gap-0.5 transition-colors min-w-0',
-              mobileTab === tab.id
+              'flex-1 min-h-12 flex flex-col items-center justify-center py-2 gap-0.5 transition-colors min-w-0',
+              mobileTab === id
                 ? 'text-[#c8102e] border-t-2 border-[#c8102e] -mt-px'
                 : 'text-[#4a5a72] border-t-2 border-transparent -mt-px hover:text-[#7a8ba8]',
             ].join(' ')}
           >
-            <span className="text-base leading-none">{tab.icon}</span>
-            <span className="text-[9px] font-mono leading-none">{tab.label}</span>
+            <span className="text-base leading-none">
+              <Icon size={18} strokeWidth={1.8} />
+            </span>
+            <span className="text-[9px] font-mono leading-none">{label}</span>
           </button>
         ))}
       </nav>
 
       {/* ── Bottom ticker (desktop only) ── */}
-      <div className="hidden lg:block">
+      <div className="hidden xl:block">
         <StatusTicker
           alerts={alerts}
           incidents={incidents}

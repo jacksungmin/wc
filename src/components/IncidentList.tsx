@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { RefreshCw } from 'lucide-react'
 import type { InrixIncident, TranStarIncident, TranStarLaneClosure } from '@/types'
+import { LaneClosureIcon } from '@/components/LaneClosureIcon'
 
 function parseIncidentTime(time: string, date: string): Date | null {
   const match = time.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i)
@@ -41,8 +42,7 @@ function incidentEmoji(type: string): string {
   return '🔴'
 }
 
-function transtarEmoji(desc: string, isLaneClosure = false): string {
-  if (isLaneClosure) return '🚧'
+function transtarEmoji(desc: string): string {
   if (/stall/i.test(desc)) return '🚗'
   if (/accident|crash/i.test(desc)) return '💥'
   if (/fire/i.test(desc)) return '🔥'
@@ -262,18 +262,21 @@ export function IncidentList({
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
                 {filter2h && transtarIncidents.length > visibleTranstarIncidents.length
                   ? 'No incidents in last 2 hours'
-                  : 'No active incidents or closures'}
+                  : 'No active incidents or closures in the current map extent'}
               </div>
             )}
 
-            {visibleTranstarIncidents.length > 0 && (
-              <div className="flex items-center gap-1.5 text-[8px] font-mono text-[#4a5a72] uppercase tracking-[0.12em] mb-1 px-1">
-                <span>Incidents · {visibleTranstarIncidents.length}</span>
-                {filter2h && transtarIncidents.length > visibleTranstarIncidents.length && (
-                  <span className="normal-case tracking-normal text-[7px] text-[#4a5a72]">
-                    ({transtarIncidents.length - visibleTranstarIncidents.length} older hidden)
-                  </span>
-                )}
+            <div className="flex items-center gap-1.5 text-[8px] font-mono text-[#4a5a72] uppercase tracking-[0.12em] mb-1 px-1">
+              <span>Incidents in Map · {visibleTranstarIncidents.length}</span>
+              {filter2h && transtarIncidents.length > visibleTranstarIncidents.length && (
+                <span className="normal-case tracking-normal text-[7px] text-[#4a5a72]">
+                  ({transtarIncidents.length - visibleTranstarIncidents.length} older hidden)
+                </span>
+              )}
+            </div>
+            {visibleTranstarIncidents.length === 0 && transtarLaneClosures.length > 0 && !transtarLoading && (
+              <div className="text-[8px] font-mono text-[#4a5a72] px-2 py-2 rounded border border-white/[0.05] bg-white/[0.02]">
+                No incidents in the current map extent
               </div>
             )}
             {visibleTranstarIncidents.map(inc => (
@@ -304,9 +307,12 @@ export function IncidentList({
               </button>
             ))}
 
-            {transtarLaneClosures.length > 0 && (
-              <div className="text-[8px] font-mono text-[#4a5a72] uppercase tracking-[0.12em] mt-2 mb-1 px-1">
-                Lane Closures · {transtarLaneClosures.length}
+            <div className="text-[8px] font-mono text-[#4a5a72] uppercase tracking-[0.12em] mt-2 mb-1 px-1">
+              Lane Closures in Map · {transtarLaneClosures.length}
+            </div>
+            {transtarLaneClosures.length === 0 && visibleTranstarIncidents.length > 0 && !transtarLoading && (
+              <div className="text-[8px] font-mono text-[#4a5a72] px-2 py-2 rounded border border-white/[0.05] bg-white/[0.02]">
+                No lane closures in the current map extent
               </div>
             )}
             {transtarLaneClosures.map(lc => (
@@ -322,7 +328,7 @@ export function IncidentList({
                 ].join(' ')}
               >
                 <div className="flex items-center gap-1 mb-0.5">
-                  <span className="text-[11px] flex-shrink-0">{transtarEmoji('', true)}</span>
+                  <LaneClosureIcon hotspot={lc.hotspot} selected={lc.id === selectedTranStarId} />
                   <span className="text-[9px] font-medium text-[#c8d6e8] truncate">{lc.roadway || lc.location}</span>
                   {lc.hotspot && (
                     <span className="text-[7px] font-mono px-1 py-0.5 rounded bg-amber-500/20 text-amber-400 flex-shrink-0 ml-auto">

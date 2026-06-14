@@ -6,19 +6,19 @@ interface UserGuideProps {
 
 export function UserGuide({ onClose }: UserGuideProps) {
   return (
-    <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[2000] flex items-center justify-center p-0 sm:p-4">
       {/* Backdrop */}
       <div className="absolute inset-0 bg-black/75 backdrop-blur-sm" onClick={onClose} />
 
       {/* Modal */}
-      <div className="relative w-full max-w-5xl h-[92vh] flex flex-col bg-[#09101e] border border-white/[0.1] rounded-lg shadow-2xl overflow-hidden">
+      <div className="relative w-full max-w-5xl h-full sm:h-[92dvh] flex flex-col bg-[#09101e] border border-white/[0.1] rounded-none sm:rounded-lg shadow-2xl overflow-hidden">
 
         {/* Toolbar */}
-        <div className="flex items-center justify-between px-4 py-2.5 border-b border-white/[0.08] flex-shrink-0 bg-[#0b1220]">
-          <div className="flex items-center gap-2.5">
+        <div className="flex items-center justify-between px-3 sm:px-4 py-2.5 border-b border-white/[0.08] flex-shrink-0 bg-[#0b1220]">
+          <div className="flex items-center gap-2.5 min-w-0">
             <span className="text-[10px] font-mono tracking-[0.15em] text-[#4a5a72] uppercase">User Guide</span>
-            <span className="text-white/10">·</span>
-            <span className="text-[10px] font-mono text-[#4a5a72]">World Cup 2026 Mobility Dashboard</span>
+            <span className="hidden sm:inline text-white/10">·</span>
+            <span className="hidden sm:inline text-[10px] font-mono text-[#4a5a72] truncate">World Cup 2026 Mobility Dashboard</span>
           </div>
           <div className="flex items-center gap-2">
             <a

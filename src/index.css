@@ -46,6 +46,12 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans);
+  min-width: 320px;
+}
+
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* Leaflet overrides */
@@ -285,6 +291,51 @@ body {
     height: 28px !important;
     font-size: 18px !important;
     padding: 4px 8px !important;
+  }
+}
+
+@media (max-width: 639px) {
+  .app-header {
+    padding-top: max(0.5rem, env(safe-area-inset-top));
+  }
+
+  .app-brand {
+    max-width: 48%;
+  }
+
+  .app-clock {
+    margin-left: auto;
+  }
+
+  .map-summary > div {
+    padding-block: 0.25rem;
+  }
+}
+
+@media (max-width: 374px) {
+  .app-brand > button,
+  .app-clock span,
+  .mobile-tabs button span:first-child {
+    display: none;
+  }
+
+  .mobile-tabs button {
+    min-height: 2.75rem;
+  }
+}
+
+@media (max-height: 520px) and (orientation: landscape) {
+  .app-header {
+    padding-block: 0.25rem;
+  }
+
+  .mobile-tabs button {
+    min-height: 2.25rem;
+    padding-block: 0.25rem;
+  }
+
+  .mobile-tabs button span:first-child {
+    display: none;
   }
 }
 

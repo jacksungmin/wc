@@ -184,7 +184,7 @@ export function CameraGrid({ cameras, selectedId, onSelect }: CameraGridProps) {
         )}
 
         {/* Camera grid */}
-        <div className="grid grid-cols-2 gap-2 p-2">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-2 gap-2 p-2">
           {cameras.map(cam => (
             <CameraCell
               key={cam.id}

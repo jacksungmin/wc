@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import L from 'leaflet'
 import { AlertTriangle, Bus, Camera, Car, CloudSun, Home, Layers, Map as MapIcon, Mountain, Satellite, TrainFront, X } from 'lucide-react'
 import 'leaflet/dist/leaflet.css'
-import type { TrafficCamera, InrixIncident, InrixSegment, MetroTripUpdate, TranStarIncident, TranStarLaneClosure } from '@/types'
+import type { TrafficCamera, InrixIncident, InrixSegment, MapExtent, MetroTripUpdate, TranStarIncident, TranStarLaneClosure } from '@/types'
+import { laneClosureIconMarkup } from '@/components/LaneClosureIcon'
 
 interface MapViewProps {
   cameras: TrafficCamera[]
@@ -21,6 +22,7 @@ interface MapViewProps {
   transtarLaneClosures: TranStarLaneClosure[]
   selectedTranStarId: string | null
   onTranStarSelect: (id: string | null) => void
+  onMapExtentChange: (extent: MapExtent) => void
 }
 
 const NRG_CENTER: [number, number] = [29.6847, -95.4107]
@@ -134,16 +136,10 @@ function transtarIncidentIcon(desc: string, selected = false) {
 }
 
 function transtarClosureIcon(hotspot: boolean, selected = false) {
-  const fill = selected ? '#2563eb' : hotspot ? '#f59e0b' : '#d97706'
-  const glow = selected ? '#2563eb' : hotspot ? '#f59e0b' : '#d97706'
   const s = selected ? 28 : 22
   // Equilateral triangle points centred in the SVG viewBox (32×32)
-  const pts = '16,3 31,29 1,29'
   return L.divIcon({
-    html: `<svg xmlns="http://www.w3.org/2000/svg" width="${s}" height="${s}" viewBox="0 0 32 32" style="cursor:pointer;filter:drop-shadow(0 0 ${selected ? 6 : 3}px ${glow}90) drop-shadow(0 2px 4px rgba(0,0,0,.5))">
-      <polygon points="${pts}" fill="${fill}" stroke="rgba(255,255,255,0.92)" stroke-width="2.2" stroke-linejoin="round"/>
-      <text x="16" y="24" text-anchor="middle" font-family="Inter,Arial,sans-serif" font-weight="800" font-size="${selected ? 13 : 11}" fill="rgba(255,255,255,0.95)">!</text>
-    </svg>`,
+    html: laneClosureIconMarkup(hotspot, selected, s),
     className: '',
     iconSize: [s, s],
     iconAnchor: [s / 2, s * 0.85],
@@ -291,7 +287,7 @@ function metroRouteLabel(update: MetroTripUpdate) {
   return update.routeLongName ? `${shortName} - ${update.routeLongName}` : `Route ${shortName}`
 }
 
-export function MapView({ cameras, selectedCameraId, onCameraSelect, camerasEnabled, onCamerasEnabledChange, incidents, selectedIncidentId, onIncidentSelect, segments, metroUpdates, selectedMetroId, onMetroSelect, transtarIncidents, transtarLaneClosures, selectedTranStarId, onTranStarSelect }: MapViewProps) {
+export function MapView({ cameras, selectedCameraId, onCameraSelect, camerasEnabled, onCamerasEnabledChange, incidents, selectedIncidentId, onIncidentSelect, segments, metroUpdates, selectedMetroId, onMetroSelect, transtarIncidents, transtarLaneClosures, selectedTranStarId, onTranStarSelect, onMapExtentChange }: MapViewProps) {
   const [mapType, setMapType] = useState<BaseMapType>('satellite')
   const [switcherOpen, setSwitcherOpen] = useState(false)
   const [trafficEnabled, setTrafficEnabled] = useState(true)
@@ -324,6 +320,18 @@ export function MapView({ cameras, selectedCameraId, onCameraSelect, camerasEnab
       attributionControl: false,
     })
     mapRef.current = map
+
+    const emitExtent = () => {
+      const bounds = map.getBounds()
+      onMapExtentChange({
+        north: bounds.getNorth(),
+        south: bounds.getSouth(),
+        east: bounds.getEast(),
+        west: bounds.getWest(),
+      })
+    }
+    map.whenReady(emitExtent)
+    map.on('moveend', emitExtent)
 
     L.control.zoom({ position: 'bottomright' }).addTo(map)
     L.control.attribution({
@@ -373,11 +381,12 @@ export function MapView({ cameras, selectedCameraId, onCameraSelect, camerasEnab
       })
 
     return () => {
+      map.off('moveend', emitExtent)
       baseLayerRef.current = null
       map.remove()
       mapRef.current = null
     }
-  }, [])
+  }, [onMapExtentChange])
 
   useEffect(() => {
     const map = mapRef.current
@@ -690,7 +699,7 @@ export function MapView({ cameras, selectedCameraId, onCameraSelect, camerasEnab
     <div className="relative size-full">
       <div ref={containerRef} className="size-full" />
 
-      <div className="absolute top-3 right-3 z-[1000] flex flex-col gap-2">
+      <div className="absolute top-2 right-2 sm:top-3 sm:right-3 z-[1000] flex flex-col gap-2">
         <button
           type="button"
           onClick={() => {
@@ -714,7 +723,7 @@ export function MapView({ cameras, selectedCameraId, onCameraSelect, camerasEnab
       </div>
 
       {switcherOpen && (
-        <div className="absolute top-14 right-3 z-[1001] w-[276px] rounded bg-white text-[#202124] shadow-2xl border border-black/10 overflow-hidden">
+        <div className="absolute top-13 right-2 sm:top-14 sm:right-3 z-[1001] w-[min(276px,calc(100%-1rem))] max-h-[calc(100%-4rem)] overflow-y-auto rounded bg-white text-[#202124] shadow-2xl border border-black/10">
           <div className="flex items-center justify-between px-4 py-3 border-b border-black/10">
             <div>
               <div className="text-[15px] font-semibold leading-tight">Map details</div>

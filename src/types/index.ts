@@ -127,6 +127,13 @@ export interface TranStarLaneClosure {
   endTime: string
 }
 
+export interface MapExtent {
+  north: number
+  south: number
+  east: number
+  west: number
+}
+
 export interface MetroTripUpdate {
   id: string
   routeId: string
