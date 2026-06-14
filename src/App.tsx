@@ -29,8 +29,11 @@ function MapFlagBadge({ label, code }: { label: string; code?: string }) {
   )
 }
 
+type MobileTab = 'map' | 'schedule' | 'transit' | 'cameras' | 'traffic'
+
 export default function App() {
   const [showGuide, setShowGuide] = useState(false)
+  const [mobileTab, setMobileTab] = useState<MobileTab>('map')
   const [selectedCameraId, setSelectedCameraId] = useState<string | null>('TX_HOU_327')
   const [camerasEnabled, setCamerasEnabled] = useState(false)
   const [enabledMetroGroups, setEnabledMetroGroups] = useState<Set<string>>(
@@ -118,16 +121,17 @@ export default function App() {
   return (
     <div className="h-full flex flex-col bg-[#070c15] font-sans overflow-hidden relative">
       {/* ── Header ── */}
-      <header className="flex items-center px-4 py-2 bg-[#09101e] border-b border-white/[0.06] flex-shrink-0 gap-3">
+      <header className="flex items-center px-3 py-2 bg-[#09101e] border-b border-white/[0.06] flex-shrink-0 gap-2 md:gap-3 md:px-4">
         {/* Left: Logo + Title */}
-        <div className="flex items-center gap-3 flex-shrink-0">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 flex items-center justify-center overflow-hidden rounded-sm border border-white/30">
+        <div className="flex items-center gap-2 md:gap-3 flex-shrink-0 min-w-0">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="w-7 h-7 flex-shrink-0 flex items-center justify-center overflow-hidden rounded-sm border border-white/30">
               <img src="/HGAC_logo.png" alt="H-GAC" className="w-full h-full object-contain" />
             </div>
-            <div>
-              <div className="text-[12px] font-semibold text-[#e8edf5] leading-tight tracking-wide">
-                World Cup 2026 Mobility Dashboard
+            <div className="min-w-0">
+              <div className="text-[11px] md:text-[12px] font-semibold text-[#e8edf5] leading-tight tracking-wide truncate">
+                <span className="hidden sm:inline">World Cup 2026 Mobility Dashboard</span>
+                <span className="sm:hidden">WC2026 Dashboard</span>
               </div>
               <div className="text-[9px] font-mono tracking-[0.2em] text-[#4a5a72] uppercase">Houston, TX</div>
             </div>
@@ -142,18 +146,18 @@ export default function App() {
           </button>
         </div>
 
-        {/* Center: Weather + Alerts */}
-        <div className="flex-1 flex items-center justify-center gap-3 min-w-0">
+        {/* Center: Weather + Alerts (hidden on mobile) */}
+        <div className="hidden md:flex flex-1 items-center justify-center gap-3 min-w-0">
           {/* Weather strip */}
           <div className="flex items-center gap-2 text-[10px] font-mono flex-shrink-0">
             {observation ? (
               <>
                 {observation.textDescription && (
-                  <span className="text-[#c8d6e8]">{observation.textDescription}</span>
+                  <span className="hidden lg:inline text-[#c8d6e8]">{observation.textDescription}</span>
                 )}
                 {observation.temperature != null && (
                   <>
-                    <span className="text-white/20">·</span>
+                    <span className="hidden lg:inline text-white/20">·</span>
                     <span className="text-[#e8edf5] font-bold">
                       {Math.round(observation.temperature * 9 / 5 + 32)}°F
                     </span>
@@ -170,7 +174,7 @@ export default function App() {
                 {observation.windSpeed != null && (
                   <>
                     <span className="text-white/20">·</span>
-                    <span className="text-[#7a8ba8]">
+                    <span className="hidden lg:inline text-[#7a8ba8]">
                       {observation.windDirection != null
                         ? ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'][Math.round(observation.windDirection / 22.5) % 16] + ' '
                         : ''}
@@ -180,8 +184,8 @@ export default function App() {
                 )}
                 {observation.relativeHumidity != null && (
                   <>
-                    <span className="text-white/20">·</span>
-                    <span className="text-[#7a8ba8]">{Math.round(observation.relativeHumidity)}% RH</span>
+                    <span className="hidden lg:inline text-white/20">·</span>
+                    <span className="hidden lg:inline text-[#7a8ba8]">{Math.round(observation.relativeHumidity)}% RH</span>
                   </>
                 )}
               </>
@@ -217,10 +221,22 @@ export default function App() {
           )}
         </div>
 
+        {/* Mobile weather temp pill (only on mobile) */}
+        {observation?.temperature != null && (
+          <div className="md:hidden flex items-center gap-1.5 flex-1 justify-center">
+            <span className="text-[11px] font-mono font-bold text-[#e8edf5]">
+              {Math.round(observation.temperature * 9 / 5 + 32)}°F
+            </span>
+            {alerts.length > 0 && (
+              <span className="w-1.5 h-1.5 rounded-full bg-orange-400 animate-pulse inline-block" />
+            )}
+          </div>
+        )}
+
         {/* Right: Incidents + Clock */}
-        <div className="flex items-center gap-2.5 flex-shrink-0">
+        <div className="flex items-center gap-2 md:gap-2.5 flex-shrink-0">
           {criticalIncidents.length > 0 && (
-            <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-orange-500/10 border border-orange-500/20">
+            <div className="hidden sm:flex items-center gap-1.5 px-2 py-1 rounded bg-orange-500/10 border border-orange-500/20">
               <span className="w-1.5 h-1.5 rounded-full bg-orange-400 animate-pulse inline-block" />
               <span className="text-[9px] font-mono text-orange-400">
                 {criticalIncidents.length} Critical Incident{criticalIncidents.length > 1 ? 's' : ''}
@@ -228,14 +244,14 @@ export default function App() {
             </div>
           )}
 
-          <div className="w-px h-5 bg-white/[0.08]" />
+          <div className="hidden sm:block w-px h-5 bg-white/[0.08]" />
 
           <div className="text-right">
-            <div className="text-[13px] font-mono font-bold text-[#e8edf5] tabular-nums">
+            <div className="text-[11px] md:text-[13px] font-mono font-bold text-[#e8edf5] tabular-nums">
               {clock.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
               <span className="text-[9px] text-[#4a5a72] font-normal ml-1">CDT</span>
             </div>
-            <div className="text-[9px] font-mono text-[#4a5a72]">
+            <div className="hidden sm:block text-[9px] font-mono text-[#4a5a72]">
               {clock.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
             </div>
           </div>
@@ -245,8 +261,8 @@ export default function App() {
       {/* ── Main content ── */}
       <div className="flex flex-1 overflow-hidden">
 
-        {/* Left panel: Match schedule + METRO */}
-        <div className="w-[388px] flex-shrink-0 flex flex-col border-r border-white/[0.06] overflow-hidden">
+        {/* Left panel: Match schedule + METRO (desktop only) */}
+        <div className="hidden lg:flex w-[388px] flex-shrink-0 flex-col border-r border-white/[0.06] overflow-hidden">
           <div className="overflow-hidden border-b border-white/[0.06]" style={{ height: '30%' }}>
             <MatchSchedule matches={NRG_MATCHES} />
           </div>
@@ -269,7 +285,7 @@ export default function App() {
           </div>
         </div>
 
-        {/* Center: Map */}
+        {/* Center: Map (always rendered; mobile panels overlay on top) */}
         <div className="flex-1 relative overflow-hidden">
           <MapView
             cameras={MAP_CAMERAS}
@@ -294,7 +310,7 @@ export default function App() {
 
           {/* Next match overlay */}
           {nextMatch && (
-            <div className="absolute top-3 left-3 z-[1000] bg-[#09101e]/95 backdrop-blur-sm border border-white/[0.10] rounded p-3 max-w-[230px]">
+            <div className="absolute top-2 left-2 md:top-3 md:left-3 z-[1000] bg-[#09101e]/95 backdrop-blur-sm border border-white/[0.10] rounded p-2.5 md:p-3 max-w-[200px] md:max-w-[230px]">
               <div className="text-[8px] font-mono tracking-[0.12em] text-[#4a5a72] uppercase mb-1.5">
                 Next at NRG · {nextMatch.stage}
               </div>
@@ -323,7 +339,7 @@ export default function App() {
 
           {/* Bus direction legend */}
           {filteredMetroUpdates.length > 0 && (
-            <div className="absolute top-3 right-14 z-[1000] bg-[#09101e]/90 backdrop-blur-sm border border-white/[0.08] rounded px-2.5 py-2">
+            <div className="absolute top-2 right-12 md:top-3 md:right-14 z-[1000] bg-[#09101e]/90 backdrop-blur-sm border border-white/[0.08] rounded px-2 md:px-2.5 py-1.5 md:py-2">
               <div className="text-[8px] font-mono tracking-[0.1em] text-[#4a5a72] uppercase mb-1.5">Bus Direction</div>
               <div className="flex items-center gap-1.5 mb-0.5">
                 <span className="w-4 h-4 rounded flex items-center justify-center text-[7px] font-bold flex-shrink-0" style={{ background: '#0e7490', color: '#fff' }}>▲</span>
@@ -338,7 +354,7 @@ export default function App() {
 
           {/* Traffic legend overlay */}
           {segments.length > 0 && (
-            <div className="absolute top-3 right-14 z-[1000] bg-[#09101e]/90 backdrop-blur-sm border border-white/[0.08] rounded px-2.5 py-2">
+            <div className="absolute top-2 right-12 md:top-3 md:right-14 z-[1000] bg-[#09101e]/90 backdrop-blur-sm border border-white/[0.08] rounded px-2 md:px-2.5 py-1.5 md:py-2">
               <div className="text-[8px] font-mono tracking-[0.1em] text-[#4a5a72] uppercase mb-1.5">Traffic</div>
               {[
                 { color: '#22c55e', label: 'Free flow' },
@@ -357,15 +373,15 @@ export default function App() {
             </div>
           )}
 
-          {/* Camera count + weather mini */}
-          <div className="absolute bottom-8 left-3 z-[1000] flex items-center gap-2">
-            <div className="bg-[#09101e]/80 backdrop-blur-sm border border-white/[0.07] rounded px-2.5 py-1.5">
+          {/* Camera count + incident mini badges */}
+          <div className="absolute bottom-2 left-2 md:bottom-8 md:left-3 z-[1000] flex items-center gap-2">
+            <div className="bg-[#09101e]/80 backdrop-blur-sm border border-white/[0.07] rounded px-2 md:px-2.5 py-1 md:py-1.5">
               <span className="text-[8px] font-mono text-[#4a5a72]">
                 📷 {ALL_CAMERAS.length} live feeds
               </span>
             </div>
             {incidents.length > 0 && (
-              <div className="bg-[#09101e]/80 backdrop-blur-sm border border-orange-500/20 rounded px-2.5 py-1.5">
+              <div className="bg-[#09101e]/80 backdrop-blur-sm border border-orange-500/20 rounded px-2 md:px-2.5 py-1 md:py-1.5">
                 <span className="text-[8px] font-mono text-orange-400">
                   💥 {incidents.length} incident{incidents.length !== 1 ? 's' : ''}
                 </span>
@@ -373,10 +389,52 @@ export default function App() {
             )}
           </div>
 
+          {/* ── Mobile panel overlays (hidden on lg+) ── */}
+          <div className={`lg:hidden absolute inset-0 z-[1001] bg-[#070c15] overflow-hidden ${mobileTab === 'schedule' ? 'flex flex-col' : 'hidden'}`}>
+            <MatchSchedule matches={NRG_MATCHES} />
+          </div>
+          <div className={`lg:hidden absolute inset-0 z-[1001] bg-[#070c15] overflow-hidden ${mobileTab === 'transit' ? 'flex flex-col' : 'hidden'}`}>
+            <MetroTransitPanel
+              updates={filteredMetroUpdates}
+              selectedId={selectedMetroId}
+              loading={metroLoading}
+              error={metroError}
+              lastUpdated={metroUpdated}
+              onSelect={id => {
+                setSelectedMetroId(id)
+                if (id) setSelectedIncidentId(null)
+              }}
+              onRefresh={metroRefresh}
+              enabledGroups={enabledMetroGroups}
+              onToggleGroup={toggleMetroGroup}
+            />
+          </div>
+          <div className={`lg:hidden absolute inset-0 z-[1001] bg-[#070c15] overflow-hidden ${mobileTab === 'cameras' ? 'flex flex-col' : 'hidden'}`}>
+            <CameraGrid
+              cameras={sortedCameras}
+              selectedId={selectedCameraId}
+              onSelect={handleCameraSelect}
+            />
+          </div>
+          <div className={`lg:hidden absolute inset-0 z-[1001] bg-[#070c15] overflow-hidden ${mobileTab === 'traffic' ? 'flex flex-col' : 'hidden'}`}>
+            <IncidentList
+              incidents={incidents}
+              selectedId={selectedIncidentId}
+              connected={connected}
+              loading={inrixLoading}
+              error={inrixError}
+              lastUpdated={inrixUpdated}
+              onSelect={id => {
+                setSelectedIncidentId(id)
+                if (id) setSelectedMetroId(null)
+              }}
+              onRefresh={inrixRefresh}
+            />
+          </div>
         </div>
 
-        {/* Right: Camera grid + INRIX traffic */}
-        <div className="w-80 flex-shrink-0 border-l border-white/[0.06] overflow-hidden flex flex-col">
+        {/* Right: Camera grid + INRIX traffic (desktop only) */}
+        <div className="hidden lg:flex w-80 flex-shrink-0 border-l border-white/[0.06] overflow-hidden flex-col">
           <div className="overflow-hidden border-b border-white/[0.06]" style={{ height: '68%' }}>
             <CameraGrid
               cameras={sortedCameras}
@@ -402,14 +460,42 @@ export default function App() {
         </div>
       </div>
 
-      {/* ── Bottom ticker ── */}
-      <StatusTicker
-        alerts={alerts}
-        incidents={incidents}
-        metroUpdates={filteredMetroUpdates}
-        liveFeeds={ALL_CAMERAS.length}
-        nextMatch={nextMatch ?? null}
-      />
+      {/* ── Mobile bottom tab bar (hidden on lg+) ── */}
+      <nav className="lg:hidden flex items-stretch bg-[#09101e] border-t border-white/[0.08] flex-shrink-0" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+        {([
+          { id: 'map',      label: 'Map',      icon: '🗺️' },
+          { id: 'schedule', label: 'Schedule', icon: '⚽' },
+          { id: 'transit',  label: 'Transit',  icon: '🚌' },
+          { id: 'cameras',  label: 'Cameras',  icon: '📷' },
+          { id: 'traffic',  label: 'Traffic',  icon: '⚠️' },
+        ] as { id: MobileTab; label: string; icon: string }[]).map(tab => (
+          <button
+            key={tab.id}
+            type="button"
+            onClick={() => setMobileTab(tab.id)}
+            className={[
+              'flex-1 flex flex-col items-center justify-center py-2 gap-0.5 transition-colors min-w-0',
+              mobileTab === tab.id
+                ? 'text-[#c8102e] border-t-2 border-[#c8102e] -mt-px'
+                : 'text-[#4a5a72] border-t-2 border-transparent -mt-px hover:text-[#7a8ba8]',
+            ].join(' ')}
+          >
+            <span className="text-base leading-none">{tab.icon}</span>
+            <span className="text-[9px] font-mono leading-none">{tab.label}</span>
+          </button>
+        ))}
+      </nav>
+
+      {/* ── Bottom ticker (desktop only) ── */}
+      <div className="hidden lg:block">
+        <StatusTicker
+          alerts={alerts}
+          incidents={incidents}
+          metroUpdates={filteredMetroUpdates}
+          liveFeeds={ALL_CAMERAS.length}
+          nextMatch={nextMatch ?? null}
+        />
+      </div>
 
       {showGuide && <UserGuide onClose={() => setShowGuide(false)} />}
     </div>
