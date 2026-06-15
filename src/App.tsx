@@ -79,7 +79,7 @@ export default function App() {
   const { observation, alerts, loading: wxLoading } = useWeather()
   const { incidents, segments, connected, loading: inrixLoading, error: inrixError, lastUpdated: inrixUpdated, refresh: inrixRefresh } = useInrix()
   const { updates: metroUpdates, loading: metroLoading, error: metroError, lastUpdated: metroUpdated, refresh: metroRefresh } = useMetroTransit()
-  const { incidents: transtarIncidents, laneClosures: transtarLaneClosures, corridors: transtarCorridors, connected: transtarConnected, loading: transtarLoading, error: transtarError, lastUpdated: transtarUpdated, refresh: transtarRefresh } = useTranStar()
+  const { incidents: transtarIncidents, laneClosures: transtarLaneClosures, floodRisks: transtarFloodRisks, corridors: transtarCorridors, connected: transtarConnected, loading: transtarLoading, error: transtarError, lastUpdated: transtarUpdated, refresh: transtarRefresh } = useTranStar()
 
   const visibleTranStarLaneClosures = useMemo(() => {
     if (!mapExtent) return transtarLaneClosures
@@ -100,6 +100,16 @@ export default function App() {
       incident.lng >= mapExtent.west
     )
   }, [transtarIncidents, mapExtent])
+
+  const visibleTranStarFloodRisks = useMemo(() => {
+    if (!mapExtent) return transtarFloodRisks
+    return transtarFloodRisks.filter(risk =>
+      risk.lat <= mapExtent.north &&
+      risk.lat >= mapExtent.south &&
+      risk.lng <= mapExtent.east &&
+      risk.lng >= mapExtent.west
+    )
+  }, [transtarFloodRisks, mapExtent])
 
   const filteredMetroUpdates = useMemo(() => {
     const ALLOWED_ROUTES = new Set([
@@ -296,10 +306,10 @@ export default function App() {
 
         {/* Left panel: Match schedule + METRO + Route Monitor (desktop only) */}
         <div className="hidden xl:flex xl:w-[340px] 2xl:w-[388px] flex-shrink-0 flex-col border-r border-white/[0.06] overflow-hidden">
-          <div className="overflow-hidden border-b border-white/[0.06]" style={{ height: '28%' }}>
+          <div className="overflow-hidden border-b border-white/[0.06]" style={{ height: '24%' }}>
             <MatchSchedule matches={NRG_MATCHES} />
           </div>
-          <div className="overflow-hidden border-b border-white/[0.06]" style={{ height: '48%' }}>
+          <div className="overflow-hidden border-b border-white/[0.06]" style={{ height: '42%' }}>
             <MetroTransitPanel
               updates={filteredMetroUpdates}
               selectedId={selectedMetroId}
@@ -315,7 +325,7 @@ export default function App() {
               onToggleGroup={toggleMetroGroup}
             />
           </div>
-          <div className="overflow-hidden" style={{ height: '28%' }}>
+          <div className="overflow-hidden" style={{ height: '34%' }}>
             <RouteMonitor
               corridors={transtarCorridors}
               loading={transtarLoading}
@@ -347,6 +357,7 @@ export default function App() {
             }}
             transtarIncidents={transtarIncidents}
             transtarLaneClosures={transtarLaneClosures}
+            transtarFloodRisks={transtarFloodRisks}
             selectedTranStarId={selectedTranStarId}
             onTranStarSelect={id => {
               setSelectedTranStarId(id)
@@ -422,13 +433,8 @@ export default function App() {
             )}
           </div>
 
-          {/* Camera count + incident mini badges */}
+          {/* Incident mini badge */}
           <div className="map-summary absolute bottom-2 left-2 right-2 md:bottom-8 md:left-3 md:right-auto z-[1000] flex flex-wrap items-center gap-1.5 md:gap-2 pointer-events-none">
-            <div className="bg-[#09101e]/80 backdrop-blur-sm border border-white/[0.07] rounded px-2 md:px-2.5 py-1 md:py-1.5">
-              <span className="text-[8px] font-mono text-[#4a5a72]">
-                📷 {ALL_CAMERAS.length} live feeds
-              </span>
-            </div>
             {incidents.length > 0 && (
               <div className="bg-[#09101e]/80 backdrop-blur-sm border border-orange-500/20 rounded px-2 md:px-2.5 py-1 md:py-1.5">
                 <span className="text-[8px] font-mono text-orange-400">
@@ -487,6 +493,7 @@ export default function App() {
               onRefresh={inrixRefresh}
               transtarIncidents={visibleTranStarIncidents}
               transtarLaneClosures={visibleTranStarLaneClosures}
+              transtarFloodRisks={visibleTranStarFloodRisks}
               transtarConnected={transtarConnected}
               transtarLoading={transtarLoading}
               transtarError={transtarError}
@@ -525,6 +532,7 @@ export default function App() {
               onRefresh={inrixRefresh}
               transtarIncidents={visibleTranStarIncidents}
               transtarLaneClosures={visibleTranStarLaneClosures}
+              transtarFloodRisks={visibleTranStarFloodRisks}
               transtarConnected={transtarConnected}
               transtarLoading={transtarLoading}
               transtarError={transtarError}
@@ -579,6 +587,7 @@ export default function App() {
           nextMatch={nextMatch ?? null}
           transtarIncidents={transtarIncidents}
           transtarLaneClosures={transtarLaneClosures}
+          transtarFloodRisks={transtarFloodRisks}
           transtarCorridors={transtarCorridors}
         />
       </div>

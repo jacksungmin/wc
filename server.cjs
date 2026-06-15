@@ -45,6 +45,11 @@ const PROXY_RULES = [
     headers: {},
   },
   {
+    prefix: '/transtar-api/',
+    base:   'https://traffic.houstontranstar.org/api/',
+    headers: { 'Referer': 'https://traffic.houstontranstar.org/' },
+  },
+  {
     prefix: '/transtar-cams/',
     base:   'https://traffic.houstontranstar.org/layers/cameras/images/',
     headers: { 'Referer': 'https://traffic.houstontranstar.org/' },

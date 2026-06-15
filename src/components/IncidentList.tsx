@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { RefreshCw } from 'lucide-react'
-import type { InrixIncident, TranStarIncident, TranStarLaneClosure } from '@/types'
+import type { InrixIncident, TranStarIncident, TranStarLaneClosure, TranStarFloodRisk } from '@/types'
 import { LaneClosureIcon } from '@/components/LaneClosureIcon'
 
 function parseIncidentTime(time: string, date: string): Date | null {
@@ -82,6 +82,7 @@ interface IncidentListProps {
   onRefresh: () => void
   transtarIncidents: TranStarIncident[]
   transtarLaneClosures: TranStarLaneClosure[]
+  transtarFloodRisks: TranStarFloodRisk[]
   transtarConnected: boolean
   transtarLoading: boolean
   transtarError: string | null
@@ -95,7 +96,7 @@ type Tab = 'inrix' | 'transtar'
 
 export function IncidentList({
   incidents, selectedId, connected, loading, error, lastUpdated, onSelect, onRefresh,
-  transtarIncidents, transtarLaneClosures, transtarConnected, transtarLoading, transtarError,
+  transtarIncidents, transtarLaneClosures, transtarFloodRisks, transtarConnected, transtarLoading, transtarError,
   transtarLastUpdated, selectedTranStarId, onTranStarSelect, onTranStarRefresh,
 }: IncidentListProps) {
   const [tab, setTab] = useState<Tab>('transtar')
@@ -104,7 +105,7 @@ export function IncidentList({
   const visibleTranstarIncidents = filter2h
     ? transtarIncidents.filter(within2Hours)
     : transtarIncidents
-  const transtarTotal = visibleTranstarIncidents.length + transtarLaneClosures.length
+  const transtarTotal = visibleTranstarIncidents.length + transtarLaneClosures.length + transtarFloodRisks.length
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -130,7 +131,7 @@ export function IncidentList({
             )}
           </div>
           <span className="text-[7px] font-mono text-[#4a5a72] mt-0.5 normal-case tracking-normal">
-            Incidents · Lane Closures
+            Incidents · Lane Closures · Roadway Flood Risk
           </span>
         </button>
         <button
@@ -345,6 +346,42 @@ export function IncidentList({
                 {lc.endTime && (
                   <div className="text-[7px] font-mono text-[#4a5a72] mt-0.5">Until {lc.endTime}</div>
                 )}
+              </button>
+            ))}
+
+            <div className="text-[8px] font-mono text-[#4a5a72] uppercase tracking-[0.12em] mt-2 mb-1 px-1">
+              Roadway Flood Risk · {transtarFloodRisks.length}
+            </div>
+            {transtarFloodRisks.length === 0 && transtarTotal > 0 && !transtarLoading && (
+              <div className="text-[8px] font-mono text-[#4a5a72] px-2 py-2 rounded border border-white/[0.05] bg-white/[0.02]">
+                No roadway flood risks in the current map extent
+              </div>
+            )}
+            {transtarFloodRisks.map(risk => (
+              <button
+                key={risk.id}
+                type="button"
+                onClick={() => onTranStarSelect(risk.id === selectedTranStarId ? null : risk.id)}
+                className={[
+                  'w-full text-left mb-1.5 p-2 rounded border transition-colors',
+                  risk.id === selectedTranStarId
+                    ? 'border-cyan-400/50 bg-cyan-500/10'
+                    : 'border-white/[0.05] bg-white/[0.02] hover:bg-white/[0.04]',
+                ].join(' ')}
+              >
+                <div className="flex items-center gap-1 mb-0.5">
+                  <span className="text-[11px] font-bold text-cyan-400 flex-shrink-0">~</span>
+                  <span className="text-[9px] font-medium text-[#c8d6e8] truncate">{risk.sensorName}</span>
+                  <span className="text-[7px] font-mono px-1 py-0.5 rounded bg-cyan-500/20 text-cyan-400 flex-shrink-0 ml-auto">
+                    {risk.radiusMiles} mi radius
+                  </span>
+                </div>
+                <div className="text-[8px] font-mono text-[#4a5a72]">
+                  {risk.precipitationAlert ? 'Rainfall alert' : risk.streamElevationAlert ? 'Stream alert' : 'Elevated flood risk'}
+                </div>
+                <div className="text-[7px] font-mono text-[#4a5a72] mt-0.5">
+                  Rain {risk.precipitationInches.toFixed(2)} in · Stream {risk.streamElevation.toFixed(2)} ft
+                </div>
               </button>
             ))}
 

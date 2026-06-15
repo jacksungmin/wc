@@ -49,7 +49,7 @@ function MatchCard({ match }: { match: WorldCupMatch }) {
   if (match.status === 'live') {
     statusLabel = 'LIVE'
     statusClass = 'text-red-400'
-  } else if (days < 0) {
+  } else if (match.status === 'completed') {
     statusLabel = 'FT'
     statusClass = 'text-[#4a5a72]'
   } else if (isToday) {
@@ -66,7 +66,7 @@ function MatchCard({ match }: { match: WorldCupMatch }) {
         'p-2.5 rounded border mb-2 transition-colors',
         match.status === 'live'
           ? 'border-red-500/40 bg-red-950/20'
-          : isToday
+          : match.status === 'upcoming' && isToday
             ? 'border-amber-500/30 bg-amber-950/10'
             : 'border-white/[0.06] bg-white/[0.02]',
       ].join(' ')}
@@ -88,8 +88,8 @@ function MatchCard({ match }: { match: WorldCupMatch }) {
       </div>
 
       {/* Teams */}
-      {match.status !== 'upcoming' ? (
-        /* Score layout for live/completed */
+      {match.status === 'completed' ? (
+        /* Completed matches are filtered out; retain this fallback for defensive rendering. */
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5 flex-1 min-w-0">
             <FlagBadge label={match.homeFlag} code={match.homeFlagCode} />
@@ -131,6 +131,8 @@ function MatchCard({ match }: { match: WorldCupMatch }) {
 }
 
 export function MatchSchedule({ matches }: { matches: WorldCupMatch[] }) {
+  const activeMatches = matches.filter(match => match.status !== 'completed')
+
   return (
     <div className="h-full flex flex-col overflow-hidden">
       <div className="flex items-center justify-between px-3 py-2.5 border-b border-white/[0.06] flex-shrink-0">
@@ -143,11 +145,11 @@ export function MatchSchedule({ matches }: { matches: WorldCupMatch[] }) {
             <div className="text-[11px] text-[#e8edf5] font-medium">NRG Stadium</div>
           </div>
         </div>
-        <span className="text-[9px] font-mono text-[#4a5a72]">{matches.length} matches</span>
+        <span className="text-[9px] font-mono text-[#4a5a72]">{activeMatches.length} event dates</span>
       </div>
 
       <div className="flex-1 overflow-y-auto p-3">
-        {matches.map(m => (
+        {activeMatches.map(m => (
           <MatchCard key={m.id} match={m} />
         ))}
         <p className="text-[8px] font-mono text-[#4a5a72] text-center mt-1 leading-relaxed">

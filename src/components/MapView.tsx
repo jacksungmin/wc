@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import L from 'leaflet'
-import { AlertTriangle, Bus, Camera, Car, CloudSun, Home, Layers, Map as MapIcon, Mountain, Satellite, TrainFront, X } from 'lucide-react'
+import { AlertTriangle, Bus, Camera, Car, CloudSun, Home, Layers, Map as MapIcon, Mountain, Satellite, TrainFront, Waves, X } from 'lucide-react'
 import 'leaflet/dist/leaflet.css'
-import type { TrafficCamera, InrixIncident, InrixSegment, MapExtent, MetroTripUpdate, TranStarIncident, TranStarLaneClosure } from '@/types'
+import type { TrafficCamera, InrixIncident, InrixSegment, MapExtent, MetroTripUpdate, TranStarIncident, TranStarLaneClosure, TranStarFloodRisk } from '@/types'
 import { laneClosureIconMarkup } from '@/components/LaneClosureIcon'
 
 interface MapViewProps {
@@ -20,6 +20,7 @@ interface MapViewProps {
   onMetroSelect: (id: string | null) => void
   transtarIncidents: TranStarIncident[]
   transtarLaneClosures: TranStarLaneClosure[]
+  transtarFloodRisks: TranStarFloodRisk[]
   selectedTranStarId: string | null
   onTranStarSelect: (id: string | null) => void
   onMapExtentChange: (extent: MapExtent) => void
@@ -287,13 +288,14 @@ function metroRouteLabel(update: MetroTripUpdate) {
   return update.routeLongName ? `${shortName} - ${update.routeLongName}` : `Route ${shortName}`
 }
 
-export function MapView({ cameras, selectedCameraId, onCameraSelect, camerasEnabled, onCamerasEnabledChange, incidents, selectedIncidentId, onIncidentSelect, segments, metroUpdates, selectedMetroId, onMetroSelect, transtarIncidents, transtarLaneClosures, selectedTranStarId, onTranStarSelect, onMapExtentChange }: MapViewProps) {
+export function MapView({ cameras, selectedCameraId, onCameraSelect, camerasEnabled, onCamerasEnabledChange, incidents, selectedIncidentId, onIncidentSelect, segments, metroUpdates, selectedMetroId, onMetroSelect, transtarIncidents, transtarLaneClosures, transtarFloodRisks, selectedTranStarId, onTranStarSelect, onMapExtentChange }: MapViewProps) {
   const [mapType, setMapType] = useState<BaseMapType>('satellite')
   const [switcherOpen, setSwitcherOpen] = useState(false)
   const [trafficEnabled, setTrafficEnabled] = useState(true)
   const [goesEnabled, setGoesEnabled] = useState(false)
   const [metroEnabled, setMetroEnabled] = useState(true)
   const [transtarEnabled, setTranstarEnabled] = useState(true)
+  const [floodRiskEnabled, setFloodRiskEnabled] = useState(true)
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<L.Map | null>(null)
   const baseLayerRef = useRef<L.Layer | null>(null)
@@ -308,6 +310,8 @@ export function MapView({ cameras, selectedCameraId, onCameraSelect, camerasEnab
   const metroMarkersRef = useRef<Map<string, L.Marker>>(new Map())
   const transtarLayerRef = useRef<L.LayerGroup | null>(null)
   const transtarMarkersRef = useRef<Map<string, L.Marker>>(new Map())
+  const floodRiskLayerRef = useRef<L.LayerGroup | null>(null)
+  const floodRiskCirclesRef = useRef<Map<string, L.Circle>>(new Map())
 
   // Init map once
   useEffect(() => {
@@ -355,6 +359,7 @@ export function MapView({ cameras, selectedCameraId, onCameraSelect, camerasEnab
     incidentLayerRef.current = L.layerGroup().addTo(map)
     metroLayerRef.current = L.layerGroup().addTo(map)
     transtarLayerRef.current = L.layerGroup().addTo(map)
+    floodRiskLayerRef.current = L.layerGroup().addTo(map)
 
     L.marker(NRG_CENTER, { icon: stadiumIcon(), zIndexOffset: 900 })
       .addTo(map)
@@ -637,20 +642,66 @@ export function MapView({ cameras, selectedCameraId, onCameraSelect, camerasEnab
     })
   }, [transtarIncidents, transtarLaneClosures, selectedTranStarId, onTranStarSelect, transtarEnabled])
 
+  // Roadway flood warnings are risk areas, represented by the radius supplied by TranStar.
+  useEffect(() => {
+    const layer = floodRiskLayerRef.current
+    if (!layer) return
+    layer.clearLayers()
+    floodRiskCirclesRef.current.clear()
+
+    const visible = floodRiskEnabled
+      ? transtarFloodRisks
+      : transtarFloodRisks.filter(risk => risk.id === selectedTranStarId)
+
+    visible.forEach(risk => {
+      const selected = risk.id === selectedTranStarId
+      const alertLabel = risk.precipitationAlert
+        ? 'Rainfall threshold alert'
+        : risk.streamElevationAlert
+          ? 'Stream elevation alert'
+          : 'Elevated roadway flood risk'
+      const popupHtml =
+        `<div style="font-family:monospace;font-size:11px;color:#e8edf5;min-width:190px">` +
+        `<b style="color:#22d3ee">Roadway Flood Risk · ${risk.sensorName}</b><br>` +
+        `<span style="color:#c8d6e8">${alertLabel}</span><br>` +
+        `<span style="color:#7a8ba8">Risk radius: ${risk.radiusMiles} mi</span><br>` +
+        `<span style="color:#7a8ba8">Rain: ${risk.precipitationInches.toFixed(2)} in · Stream: ${risk.streamElevation.toFixed(2)} ft</span>` +
+        `${risk.timestamp ? `<br><span style="color:#4a5a72">Updated: ${risk.timestamp}</span>` : ''}` +
+        `</div>`
+
+      const circle = L.circle([risk.lat, risk.lng], {
+        radius: risk.radiusMiles * 1609.344,
+        color: selected ? '#ffffff' : '#06b6d4',
+        weight: selected ? 3 : 2,
+        fillColor: '#0891b2',
+        fillOpacity: selected ? 0.34 : 0.2,
+        dashArray: selected ? undefined : '6 5',
+      })
+        .addTo(layer)
+        .bindPopup(popupHtml, { className: 'nrg-popup', closeOnClick: false, autoClose: false })
+      circle.on('click', () => onTranStarSelect(risk.id === selectedTranStarId ? null : risk.id))
+      floodRiskCirclesRef.current.set(risk.id, circle)
+      if (selected) circle.openPopup()
+    })
+  }, [transtarFloodRisks, selectedTranStarId, onTranStarSelect, floodRiskEnabled])
+
   useEffect(() => {
     const map = mapRef.current
     if (!map || !selectedTranStarId) return
     const allItems = [
       ...transtarIncidents.map(inc => ({ id: inc.id, lat: inc.lat, lng: inc.lng })),
       ...transtarLaneClosures.map(lc => ({ id: lc.id, lat: lc.lat, lng: lc.lng })),
+      ...transtarFloodRisks.map(risk => ({ id: risk.id, lat: risk.lat, lng: risk.lng })),
     ]
     const item = allItems.find(i => i.id === selectedTranStarId)
     if (!item?.lat || !item.lng) return
     transtarMarkersRef.current.get(selectedTranStarId)?.openPopup()
+    floodRiskCirclesRef.current.get(selectedTranStarId)?.openPopup()
     map.flyTo([item.lat, item.lng], Math.max(map.getZoom(), 15), { animate: true, duration: 0.6 })
     window.setTimeout(() => { transtarMarkersRef.current.get(selectedTranStarId)?.openPopup() }, 650)
+    window.setTimeout(() => { floodRiskCirclesRef.current.get(selectedTranStarId)?.openPopup() }, 650)
     hadFocusedSelectionRef.current = true
-  }, [transtarIncidents, transtarLaneClosures, selectedTranStarId])
+  }, [transtarIncidents, transtarLaneClosures, transtarFloodRisks, selectedTranStarId])
 
   // Update camera markers
   useEffect(() => {
@@ -874,6 +925,43 @@ export function MapView({ cameras, selectedCameraId, onCameraSelect, camerasEnab
                   className={[
                     'block w-4 h-4 rounded-full bg-white shadow transition-transform',
                     transtarEnabled ? 'translate-x-4' : 'translate-x-0',
+                  ].join(' ')}
+                />
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setFloodRiskEnabled(v => !v)}
+              className="w-full flex items-center justify-between rounded-md px-2 py-2 hover:bg-black/[0.04] transition-colors"
+            >
+              <span className="flex items-center gap-2">
+                <span
+                  className={[
+                    'w-10 h-10 rounded-md border flex items-center justify-center',
+                    floodRiskEnabled ? 'border-cyan-600 bg-cyan-50 text-cyan-700' : 'border-black/10 bg-[#f1f3f4] text-[#5f6368]',
+                  ].join(' ')}
+                >
+                  <Waves size={19} />
+                </span>
+                <span>
+                  <span className={`block text-[13px] ${floodRiskEnabled ? 'text-cyan-700 font-medium' : 'text-[#3c4043]'}`}>
+                    Roadway Flood Risk
+                  </span>
+                  <span className="block text-[10px] text-[#70757a] leading-tight">
+                    TranStar warning areas
+                  </span>
+                </span>
+              </span>
+              <span
+                className={[
+                  'w-9 h-5 rounded-full p-0.5 transition-colors',
+                  floodRiskEnabled ? 'bg-cyan-600' : 'bg-[#dadce0]',
+                ].join(' ')}
+              >
+                <span
+                  className={[
+                    'block w-4 h-4 rounded-full bg-white shadow transition-transform',
+                    floodRiskEnabled ? 'translate-x-4' : 'translate-x-0',
                   ].join(' ')}
                 />
               </span>

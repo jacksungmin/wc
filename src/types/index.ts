@@ -127,6 +127,21 @@ export interface TranStarLaneClosure {
   endTime: string
 }
 
+export interface TranStarFloodRisk {
+  id: string
+  sensorName: string
+  timestamp: string
+  lat: number
+  lng: number
+  radiusMiles: number
+  precipitationInches: number
+  streamElevation: number
+  precipitationAlert: boolean
+  streamElevationAlert: boolean
+  sensorUrl: string
+  regionCode: string
+}
+
 export interface MapExtent {
   north: number
   south: number

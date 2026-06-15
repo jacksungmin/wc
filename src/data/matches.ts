@@ -13,7 +13,9 @@ export const NRG_MATCHES: WorldCupMatch[] = [
     awayFlagCode: 'cw',
     group: 'Group E',
     stage: 'Match 10 - Group Stage',
-    status: 'upcoming',
+    status: 'completed',
+    homeScore: 7,
+    awayScore: 1,
   },
   {
     id: 'm2',

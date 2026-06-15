@@ -1,4 +1,4 @@
-import type { InrixIncident, MetroTripUpdate, TranStarCorridor, TranStarIncident, TranStarLaneClosure, WeatherAlert, WorldCupMatch } from '@/types'
+import type { InrixIncident, MetroTripUpdate, TranStarCorridor, TranStarIncident, TranStarLaneClosure, TranStarFloodRisk, WeatherAlert, WorldCupMatch } from '@/types'
 
 function transtarIncidentEmoji(desc: string): string {
   if (/accident|crash/i.test(desc)) return '💥'
@@ -17,6 +17,7 @@ interface StatusTickerProps {
   nextMatch: WorldCupMatch | null
   transtarIncidents: TranStarIncident[]
   transtarLaneClosures: TranStarLaneClosure[]
+  transtarFloodRisks: TranStarFloodRisk[]
   transtarCorridors: TranStarCorridor[]
 }
 
@@ -28,6 +29,7 @@ export function StatusTicker({
   nextMatch,
   transtarIncidents,
   transtarLaneClosures,
+  transtarFloodRisks,
   transtarCorridors,
 }: StatusTickerProps) {
   const metroRouteCount = new Set(metroUpdates.map(update => update.routeId).filter(Boolean)).size
@@ -38,6 +40,9 @@ export function StatusTicker({
   const railDepartures = metroUpdates.filter(u => u.isScheduled).length
 
   const hotspotClosures = transtarLaneClosures.filter(lc => lc.hotspot)
+  const activeFloodRisks = transtarFloodRisks.filter(risk =>
+    risk.precipitationAlert || risk.streamElevationAlert
+  )
 
   const liveCorridors = transtarCorridors.filter(c => c.travelMin > 0)
   const delayedCorridors = liveCorridors.filter(c => c.delayMin > 1)
@@ -73,6 +78,10 @@ export function StatusTicker({
       : 'No active weather alerts for Houston',
     `INRIX — ${incidents.length} traffic incident${incidents.length !== 1 ? 's' : ''} in the 2-hour window${majorIncidentCount > 0 ? ` · ${majorIncidentCount} high severity` : ''}`,
     ...transtarItems,
+    `Roadway Flood Risk — ${transtarFloodRisks.length} TranStar warning area${transtarFloodRisks.length !== 1 ? 's' : ''}`,
+    ...transtarFloodRisks.map(risk =>
+      `Roadway Flood Risk: ${risk.sensorName} · ${risk.radiusMiles} mi warning area · rain ${risk.precipitationInches.toFixed(2)} in · stream ${risk.streamElevation.toFixed(2)} ft${risk.precipitationAlert ? ' · rainfall alert' : ''}${risk.streamElevationAlert ? ' · stream elevation alert' : ''}`
+    ),
     ...corridorItems,
     `METRO Live Transit — ${metroRouteCount} active route${metroRouteCount !== 1 ? 's' : ''} · ${busTrips} live bus trip${busTrips !== 1 ? 's' : ''} · ${railDepartures} scheduled rail departure${railDepartures !== 1 ? 's' : ''} · ${positionedMetroCount} mapped`,
     `METRO panel: 6 route groups (METROrail · NRG Stadium · Fan Festival · Airport · Park & Ride · Local) · use eye icon to show or hide each group on the map`,
@@ -90,7 +99,7 @@ export function StatusTicker({
     <div className="flex items-center h-7 bg-[#060a12] border-t border-white/[0.06] overflow-hidden flex-shrink-0">
       <div className="flex-shrink-0 px-2.5 border-r border-white/[0.06]">
         <span className="text-[8px] font-mono tracking-[0.15em] text-[#4a5a72] uppercase">
-          {alerts.length > 0 || majorIncidentCount > 0 || transtarIncidents.length > 0 ? 'LIVE ALERTS' : 'STATUS'}
+          {alerts.length > 0 || majorIncidentCount > 0 || transtarIncidents.length > 0 || activeFloodRisks.length > 0 ? 'LIVE ALERTS' : 'STATUS'}
         </span>
       </div>
 

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import type { TranStarIncident, TranStarLaneClosure, TranStarCorridor, TranStarSegmentDetail } from '@/types'
+import type { TranStarIncident, TranStarLaneClosure, TranStarFloodRisk, TranStarCorridor, TranStarSegmentDetail } from '@/types'
 
 // Set VITE_TRANSTAR_LIVE=true once TranStar grants live feed access
 const USE_LIVE = import.meta.env.VITE_TRANSTAR_LIVE === 'true'
@@ -7,6 +7,7 @@ const SUFFIX = USE_LIVE ? '' : '_sample'
 const INCIDENTS_URL = `/transtar-api/incidents${SUFFIX}.json`
 const CLOSURES_URL = `/transtar-api/laneclosures${SUFFIX}.json`
 const SEGMENTS_URL = `/transtar-api/speedsegments${SUFFIX}.json`
+const FLOOD_RISKS_URL = `/transtar-api/roadwayfloodwarning${SUFFIX}.json`
 const REFRESH_MS = 60_000
 
 // Key game-day corridors to NRG Stadium
@@ -26,11 +27,37 @@ const nearNRG = (lat: number, lng: number) =>
 interface TranStarState {
   incidents: TranStarIncident[]
   laneClosures: TranStarLaneClosure[]
+  floodRisks: TranStarFloodRisk[]
   corridors: TranStarCorridor[]
   connected: boolean
   loading: boolean
   error: string | null
   lastUpdated: Date | null
+}
+
+function asBoolean(value: unknown): boolean {
+  return value === true || String(value).toLowerCase() === 'true'
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function parseFloodRisk(raw: any, index: number): TranStarFloodRisk | null {
+  const lat = Number(raw.Latitude ?? raw.latitude ?? raw.lat)
+  const lng = Number(raw.Longitude ?? raw.longitude ?? raw.lng)
+  if (!validCoords(lat, lng)) return null
+  return {
+    id: `ts-flood-${raw.SensorId ?? raw.sensorId ?? index}`,
+    sensorName: String(raw.SensorName ?? raw.sensorName ?? `Flood sensor ${index + 1}`),
+    timestamp: String(raw.Timestamp ?? raw.timestamp ?? ''),
+    lat,
+    lng,
+    radiusMiles: Math.max(Number(raw.Radius ?? raw.radius) || 0.5, 0.1),
+    precipitationInches: Number(raw.PrecipitationLatestValue ?? raw.precipitationLatestValue) || 0,
+    streamElevation: Number(raw.StreamElevationLatestValue ?? raw.streamElevationLatestValue) || 0,
+    precipitationAlert: asBoolean(raw.IsPrecipitationAlert ?? raw.isPrecipitationAlert),
+    streamElevationAlert: asBoolean(raw.IsStreamElevationAlert ?? raw.isStreamElevationAlert),
+    sensorUrl: String(raw.SensorUrl ?? raw.sensorUrl ?? ''),
+    regionCode: String(raw.RegionCode ?? raw.regionCode ?? ''),
+  }
 }
 
 // Houston is ~29°N, ~95°W. TranStar uses -1/-1 as "no location" sentinel.
@@ -126,6 +153,7 @@ export function useTranStar() {
   const [state, setState] = useState<TranStarState>({
     incidents: [],
     laneClosures: [],
+    floodRisks: [],
     corridors: [],
     connected: false,
     loading: true,
@@ -136,16 +164,18 @@ export function useTranStar() {
   const refresh = useCallback(async () => {
     setState(s => ({ ...s, loading: true, error: null }))
     try {
-      const [incRes, closRes, segRes] = await Promise.all([
+      const [incRes, closRes, segRes, floodRes] = await Promise.all([
         fetch(INCIDENTS_URL),
         fetch(CLOSURES_URL),
         fetch(SEGMENTS_URL),
+        fetch(FLOOD_RISKS_URL),
       ])
 
-      const [incData, closData, segData] = await Promise.all([
+      const [incData, closData, segData, floodData] = await Promise.all([
         incRes.ok ? incRes.json() : null,
         closRes.ok ? closRes.json() : null,
         segRes.ok ? segRes.json() : null,
+        floodRes.ok ? floodRes.json() : null,
       ])
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -154,6 +184,8 @@ export function useTranStar() {
       const rawClos: any[] = closData?.result?.laneclosures ?? closData?.laneclosures ?? []
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const rawSegs: any[] = segData?.result?.seg ?? []
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const rawFloodRisks: any[] = floodData?.result ?? floodData?.roadwayFloodWarnings ?? []
 
       const incidents = (Array.isArray(rawInc) ? rawInc : [])
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -166,10 +198,15 @@ export function useTranStar() {
         .filter(Boolean) as TranStarLaneClosure[]
 
       const corridors = buildCorridors(Array.isArray(rawSegs) ? rawSegs : [])
+      const floodRisks = (Array.isArray(rawFloodRisks) ? rawFloodRisks : [])
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .map((r: any, i: number) => parseFloodRisk(r, i))
+        .filter(Boolean) as TranStarFloodRisk[]
 
       setState({
         incidents,
         laneClosures,
+        floodRisks,
         corridors,
         connected: true,
         loading: false,

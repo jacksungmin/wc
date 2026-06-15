@@ -123,6 +123,15 @@ export default defineConfig(({ mode }) => {
           Origin: 'https://traffic.houstontranstar.org',
         },
       },
+      '/transtar-api': {
+        target: 'https://traffic.houstontranstar.org',
+        changeOrigin: true,
+        secure: true,
+        rewrite: (path) => path.replace(/^\/transtar-api/, '/api'),
+        headers: {
+          Referer: 'https://traffic.houstontranstar.org/',
+        },
+      },
       // NWS weather API — requires User-Agent; CORS blocks direct browser requests
       '/weather-api': {
         target: 'https://api.weather.gov',
