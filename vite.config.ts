@@ -49,6 +49,13 @@ function extractOpenAiText(data: unknown): string {
   return parts.join('\n').trim()
 }
 
+function openAiErrorMessage(status: number, data: unknown): string {
+  const record = data && typeof data === 'object' ? data as { error?: { message?: unknown }, message?: unknown } : null
+  const message = record?.error?.message ?? record?.message
+  if (typeof message === 'string' && message.trim()) return `OpenAI ${status}: ${message}`
+  return `OpenAI request failed with status ${status}.`
+}
+
 function aiAssistantPlugin(apiKey?: string, model = 'gpt-5.5'): Plugin {
   return {
     name: 'ai-assistant-dev-api',
@@ -101,23 +108,18 @@ function aiAssistantPlugin(apiKey?: string, model = 'gpt-5.5'): Plugin {
             },
             body: JSON.stringify({
               model,
-              input: [
-                { role: 'system', content: [{ type: 'input_text', text: systemPrompt }] },
-                {
-                  role: 'user',
-                  content: [{
-                    type: 'input_text',
-                    text: `Question: ${question}\n\nDashboard context:\n${JSON.stringify(payload.context ?? {}, null, 2)}`,
-                  }],
-                },
-              ],
+              instructions: systemPrompt,
+              input: `Question: ${question}\n\nDashboard context:\n${JSON.stringify(payload.context ?? {}, null, 2)}`,
+              reasoning: { effort: 'low' },
+              text: { verbosity: 'low' },
               max_output_tokens: 300,
             }),
           })
           const data = await upstream.json().catch(() => null)
           if (!upstream.ok) {
             console.error('[ai-assistant] OpenAI error', upstream.status, data)
-            sendJson(res, 502, { error: 'OpenAI request failed.' })
+            const status = upstream.status >= 400 && upstream.status < 500 ? upstream.status : 502
+            sendJson(res, status, { error: openAiErrorMessage(upstream.status, data) })
             return
           }
           sendJson(res, 200, { answer: extractOpenAiText(data) || 'No answer returned.' })

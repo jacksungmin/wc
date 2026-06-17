@@ -145,6 +145,12 @@ function sendJson(res, status, data) {
   res.end(JSON.stringify(data))
 }
 
+function openAiErrorMessage(status, data) {
+  const message = data?.error?.message || data?.message
+  if (typeof message === 'string' && message.trim()) return `OpenAI ${status}: ${message}`
+  return `OpenAI request failed with status ${status}.`
+}
+
 async function handleAiAssistant(req, res) {
   if (req.method !== 'POST') {
     sendJson(res, 405, { error: 'Method not allowed' })
@@ -193,23 +199,18 @@ async function handleAiAssistant(req, res) {
       },
       body: JSON.stringify({
         model: OPENAI_MODEL,
-        input: [
-          { role: 'system', content: [{ type: 'input_text', text: systemPrompt }] },
-          {
-            role: 'user',
-            content: [{
-              type: 'input_text',
-              text: `Question: ${question}\n\nDashboard context:\n${JSON.stringify(payload.context || {}, null, 2)}`,
-            }],
-          },
-        ],
+        instructions: systemPrompt,
+        input: `Question: ${question}\n\nDashboard context:\n${JSON.stringify(payload.context || {}, null, 2)}`,
+        reasoning: { effort: 'low' },
+        text: { verbosity: 'low' },
         max_output_tokens: 300,
       }),
     })
     const data = await upstream.json().catch(() => null)
     if (!upstream.ok) {
       console.error('[ai-assistant] OpenAI error', upstream.status, data)
-      sendJson(res, 502, { error: 'OpenAI request failed.' })
+      const status = upstream.status >= 400 && upstream.status < 500 ? upstream.status : 502
+      sendJson(res, status, { error: openAiErrorMessage(upstream.status, data) })
       return
     }
     sendJson(res, 200, { answer: extractOpenAiText(data) || 'No answer returned.' })

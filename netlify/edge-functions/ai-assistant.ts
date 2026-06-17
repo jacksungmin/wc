@@ -48,6 +48,12 @@ function extractText(data: any): string {
   return parts.join('\n').trim()
 }
 
+function openAiErrorMessage(status: number, data: any): string {
+  const message = data?.error?.message || data?.message
+  if (typeof message === 'string' && message.trim()) return `OpenAI ${status}: ${message}`
+  return `OpenAI request failed with status ${status}.`
+}
+
 export default async (request: Request): Promise<Response> => {
   if (request.method === 'OPTIONS') return json({}, 204)
   if (request.method !== 'POST') return json({ error: 'Method not allowed' }, 405)
@@ -64,32 +70,33 @@ export default async (request: Request): Promise<Response> => {
   if (!question) return json({ error: 'Question is required' }, 400)
 
   const dashboardContext = JSON.stringify(payload.context ?? {}, null, 2)
-  const response = await fetch('https://api.openai.com/v1/responses', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${OPENAI_API_KEY}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: OPENAI_MODEL,
-      input: [
-        { role: 'system', content: [{ type: 'input_text', text: SYSTEM_PROMPT }] },
-        {
-          role: 'user',
-          content: [{
-            type: 'input_text',
-            text: `Question: ${question}\n\nDashboard context:\n${dashboardContext}`,
-          }],
-        },
-      ],
-      max_output_tokens: 300,
-    }),
-  })
+  let response: Response
+  try {
+    response = await fetch('https://api.openai.com/v1/responses', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${OPENAI_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: OPENAI_MODEL,
+        instructions: SYSTEM_PROMPT,
+        input: `Question: ${question}\n\nDashboard context:\n${dashboardContext}`,
+        reasoning: { effort: 'low' },
+        text: { verbosity: 'low' },
+        max_output_tokens: 300,
+      }),
+    })
+  } catch (error) {
+    console.error('[ai-assistant] OpenAI network error', error)
+    return json({ error: 'Could not reach OpenAI from Netlify.' }, 502)
+  }
 
   const data = await response.json().catch(() => null)
   if (!response.ok) {
     console.error('[ai-assistant] OpenAI error', response.status, data)
-    return json({ error: 'OpenAI request failed.' }, 502)
+    const status = response.status >= 400 && response.status < 500 ? response.status : 502
+    return json({ error: openAiErrorMessage(response.status, data) }, status)
   }
 
   const answer = extractText(data)
