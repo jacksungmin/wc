@@ -1,5 +1,10 @@
-const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY') ?? ''
-const OPENAI_MODEL = Deno.env.get('OPENAI_MODEL') ?? 'gpt-5.5'
+function envValue(key: string) {
+  const value = (globalThis as any).Netlify?.env?.get?.(key)
+  return typeof value === 'string' ? value : Deno.env.get(key) ?? ''
+}
+
+const OPENAI_API_KEY = envValue('OPENAI_API_KEY')
+const OPENAI_MODEL = envValue('OPENAI_MODEL') || 'gpt-5.5'
 
 const SYSTEM_PROMPT = `
 You are the World Cup 2026 Houston mobility dashboard assistant.
