@@ -59,6 +59,21 @@ export default function App() {
   const handleCameraSelect = useCallback((id: string | null) => {
     setSelectedCameraId(id)
   }, [])
+  const handleIncidentSelect = useCallback((id: string | null) => {
+    setSelectedIncidentId(id)
+    if (id) setSelectedMetroId(null)
+  }, [])
+  const handleMetroSelect = useCallback((id: string | null) => {
+    setSelectedMetroId(id)
+    if (id) setSelectedIncidentId(null)
+  }, [])
+  const handleTranStarSelect = useCallback((id: string | null) => {
+    setSelectedTranStarId(id)
+    if (id) {
+      setSelectedIncidentId(null)
+      setSelectedMetroId(null)
+    }
+  }, [])
   const handleMapExtentChange = useCallback((extent: MapExtent) => {
     setMapExtent(extent)
   }, [])
@@ -316,10 +331,7 @@ export default function App() {
               loading={metroLoading}
               error={metroError}
               lastUpdated={metroUpdated}
-              onSelect={id => {
-                setSelectedMetroId(id)
-                if (id) setSelectedIncidentId(null)
-              }}
+              onSelect={handleMetroSelect}
               onRefresh={metroRefresh}
               enabledGroups={enabledMetroGroups}
               onToggleGroup={toggleMetroGroup}
@@ -344,25 +356,16 @@ export default function App() {
             onCamerasEnabledChange={setCamerasEnabled}
             incidents={incidents}
             selectedIncidentId={selectedIncidentId}
-            onIncidentSelect={id => {
-              setSelectedIncidentId(id)
-              if (id) setSelectedMetroId(null)
-            }}
+            onIncidentSelect={handleIncidentSelect}
             segments={segments}
             metroUpdates={mapMetroUpdates}
             selectedMetroId={selectedMetroId}
-            onMetroSelect={id => {
-              setSelectedMetroId(id)
-              if (id) setSelectedIncidentId(null)
-            }}
+            onMetroSelect={handleMetroSelect}
             transtarIncidents={transtarIncidents}
             transtarLaneClosures={transtarLaneClosures}
             transtarFloodRisks={transtarFloodRisks}
             selectedTranStarId={selectedTranStarId}
-            onTranStarSelect={id => {
-              setSelectedTranStarId(id)
-              if (id) { setSelectedIncidentId(null); setSelectedMetroId(null) }
-            }}
+            onTranStarSelect={handleTranStarSelect}
             onMapExtentChange={handleMapExtentChange}
           />
 
@@ -455,10 +458,7 @@ export default function App() {
               loading={metroLoading}
               error={metroError}
               lastUpdated={metroUpdated}
-              onSelect={id => {
-                setSelectedMetroId(id)
-                if (id) setSelectedIncidentId(null)
-              }}
+              onSelect={handleMetroSelect}
               onRefresh={metroRefresh}
               enabledGroups={enabledMetroGroups}
               onToggleGroup={toggleMetroGroup}
@@ -486,10 +486,7 @@ export default function App() {
               loading={inrixLoading}
               error={inrixError}
               lastUpdated={inrixUpdated}
-              onSelect={id => {
-                setSelectedIncidentId(id)
-                if (id) setSelectedMetroId(null)
-              }}
+              onSelect={handleIncidentSelect}
               onRefresh={inrixRefresh}
               transtarIncidents={visibleTranStarIncidents}
               transtarLaneClosures={visibleTranStarLaneClosures}
@@ -499,10 +496,7 @@ export default function App() {
               transtarError={transtarError}
               transtarLastUpdated={transtarUpdated}
               selectedTranStarId={selectedTranStarId}
-              onTranStarSelect={id => {
-                setSelectedTranStarId(id)
-                if (id) { setSelectedIncidentId(null); setSelectedMetroId(null) }
-              }}
+              onTranStarSelect={handleTranStarSelect}
               onTranStarRefresh={transtarRefresh}
             />
           </div>
@@ -525,10 +519,7 @@ export default function App() {
               loading={inrixLoading}
               error={inrixError}
               lastUpdated={inrixUpdated}
-              onSelect={id => {
-                setSelectedIncidentId(id)
-                if (id) setSelectedMetroId(null)
-              }}
+              onSelect={handleIncidentSelect}
               onRefresh={inrixRefresh}
               transtarIncidents={visibleTranStarIncidents}
               transtarLaneClosures={visibleTranStarLaneClosures}
@@ -538,10 +529,7 @@ export default function App() {
               transtarError={transtarError}
               transtarLastUpdated={transtarUpdated}
               selectedTranStarId={selectedTranStarId}
-              onTranStarSelect={id => {
-                setSelectedTranStarId(id)
-                if (id) { setSelectedIncidentId(null); setSelectedMetroId(null) }
-              }}
+              onTranStarSelect={handleTranStarSelect}
               onTranStarRefresh={transtarRefresh}
             />
           </div>
