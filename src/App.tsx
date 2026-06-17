@@ -7,6 +7,7 @@ import { IncidentList } from '@/components/IncidentList'
 import { MetroTransitPanel, ROUTE_GROUPS } from '@/components/MetroTransitPanel'
 import { RouteMonitor } from '@/components/RouteMonitor'
 import { UserGuide } from '@/components/UserGuide'
+import { DashboardAssistant, type DashboardAssistantContext } from '@/components/DashboardAssistant'
 import { useWeather } from '@/hooks/useWeather'
 import { useInrix } from '@/hooks/useInrix'
 import { useMetroTransit } from '@/hooks/useMetroTransit'
@@ -41,8 +42,14 @@ function pointInExtent(lat: number, lng: number, extent: MapExtent) {
   return lat <= extent.north && lat >= extent.south && lng <= extent.east && lng >= extent.west
 }
 
+function metroRouteNumber(routeId?: string | null, routeShortName?: string | null) {
+  return String(routeShortName ?? routeId ?? '').replace(/^0+/, '')
+}
+
 type MobileTab = 'map' | 'schedule' | 'transit' | 'routes' | 'cameras' | 'traffic'
 const DEFAULT_CAMERA_ID = 'TX_HOU_326'
+const ASSISTANT_METRO_TRIP_LIMIT = 80
+const ASSISTANT_INRIX_SEGMENT_LIMIT = 120
 
 export default function App() {
   const [showGuide, setShowGuide] = useState(false)
@@ -63,6 +70,7 @@ export default function App() {
   const [selectedMetroId, setSelectedMetroId] = useState<string | null>(null)
   const [selectedTranStarId, setSelectedTranStarId] = useState<string | null>(null)
   const [mapExtent, setMapExtent] = useState<MapExtent | null>(null)
+  const [inrixSegmentsEnabled, setInrixSegmentsEnabled] = useState(false)
 
   const handleCameraSelect = useCallback((id: string | null) => {
     setSelectedCameraId(id)
@@ -100,7 +108,7 @@ export default function App() {
   [])
 
   const { observation, alerts, loading: wxLoading } = useWeather()
-  const { incidents, segments, connected, loading: inrixLoading, error: inrixError, lastUpdated: inrixUpdated, refresh: inrixRefresh } = useInrix()
+  const { token: inrixToken, incidents, segments, connected, loading: inrixLoading, error: inrixError, lastUpdated: inrixUpdated, refresh: inrixRefresh } = useInrix()
   const { updates: metroUpdates, loading: metroLoading, error: metroError, lastUpdated: metroUpdated, refresh: metroRefresh } = useMetroTransit()
   const { incidents: transtarIncidents, laneClosures: transtarLaneClosures, floodRisks: transtarFloodRisks, corridors: transtarCorridors, connected: transtarConnected, loading: transtarLoading, error: transtarError, lastUpdated: transtarUpdated, refresh: transtarRefresh } = useTranStar()
 
@@ -180,6 +188,289 @@ export default function App() {
         return Math.ceil((new Date(nextMatch.date + 'T00:00:00').getTime() - today.getTime()) / 86_400_000)
       })()
     : null
+
+  const busToNrgTrips = useMemo(() => {
+    const group = ROUTE_GROUPS.find(item => item.id === 'nrg')
+    if (!group?.routes) return []
+    return filteredMetroUpdates
+      .filter(update => {
+        const rail = update.routeType === 0 || update.routeType === 1 || update.routeType === 2
+        return !rail && group.routes!.has(metroRouteNumber(update.routeId, update.routeShortName))
+      })
+      .sort((a, b) => {
+        const aTime = a.arrivalTime ? new Date(a.arrivalTime).getTime() : Number.MAX_SAFE_INTEGER
+        const bTime = b.arrivalTime ? new Date(b.arrivalTime).getTime() : Number.MAX_SAFE_INTEGER
+        return aTime - bTime
+      })
+  }, [filteredMetroUpdates])
+
+  const busToNrgDelayedTrips = useMemo(
+    () => busToNrgTrips.filter(update => (update.delaySeconds ?? 0) > 0),
+    [busToNrgTrips]
+  )
+
+  const mapMetroUpdateIds = useMemo(() => new Set(mapMetroUpdates.map(update => update.id)), [mapMetroUpdates])
+  const selectedCamera = useMemo(
+    () => sortedCameras.find(camera => camera.id === selectedCameraId) ?? null,
+    [selectedCameraId, sortedCameras]
+  )
+
+  const assistantContext: DashboardAssistantContext = useMemo(() => ({
+    timestamp: clock.toISOString(),
+    mapExtentAvailable: Boolean(mapExtent),
+    mapExtent,
+    recordLimits: {
+      metroTrips: ASSISTANT_METRO_TRIP_LIMIT,
+      inrixSegments: ASSISTANT_INRIX_SEGMENT_LIMIT,
+      note: 'Detailed high-volume arrays are capped, but total counts and group summaries are complete.',
+    },
+    dataStatus: {
+      inrixConnected: connected,
+      inrixLoading,
+      inrixError,
+      transtarConnected,
+      transtarLoading,
+      transtarError,
+      metroLoading,
+      metroError,
+    },
+    selections: {
+      cameraId: selectedCameraId,
+      inrixIncidentId: selectedIncidentId,
+      metroTripId: selectedMetroId,
+      transtarItemId: selectedTranStarId,
+    },
+    weather: {
+      description: observation?.textDescription ?? null,
+      temperatureF: observation?.temperature != null ? Math.round(observation.temperature * 9 / 5 + 32) : null,
+      feelsLikeF: (observation?.heatIndex ?? observation?.windChill) != null
+        ? Math.round(((observation?.heatIndex ?? observation?.windChill)! * 9 / 5 + 32))
+        : null,
+      windMph: observation?.windSpeed != null ? Math.round(observation.windSpeed * 2.237) : null,
+      humidity: observation?.relativeHumidity != null ? Math.round(observation.relativeHumidity) : null,
+    },
+    alerts: alerts.slice(0, 6).map(alert => ({
+      event: alert.event,
+      severity: alert.severity,
+      headline: alert.headline,
+    })),
+    traffic: {
+      inrixIncidentsTotal: incidents.length,
+      inrixIncidentsVisible: visibleInrixIncidents.length,
+      inrixSegmentsTotal: segments.length,
+      inrixSegmentsVisible: visibleInrixSegments.length,
+      transtarIncidentsTotal: transtarIncidents.length,
+      transtarIncidentsVisible: visibleTranStarIncidents.length,
+      transtarLaneClosuresTotal: transtarLaneClosures.length,
+      transtarLaneClosuresVisible: visibleTranStarLaneClosures.length,
+      transtarFloodRisksTotal: transtarFloodRisks.length,
+      transtarFloodRisksVisible: visibleTranStarFloodRisks.length,
+      inrixIncidents: incidents.map(incident => ({
+        id: incident.id,
+        type: incident.type,
+        subType: incident.subType,
+        severity: incident.severity,
+        description: incident.shortDesc || incident.fullDesc,
+        fullDescription: incident.fullDesc,
+        startTime: incident.startTime,
+        lat: incident.lat,
+        lng: incident.lng,
+        visibleInMap: visibleInrixIncidents.some(visible => visible.id === incident.id),
+      })),
+      inrixSegments: segments.slice(0, ASSISTANT_INRIX_SEGMENT_LIMIT).map(segment => ({
+        code: segment.code,
+        speed: segment.speed,
+        averageSpeed: segment.averageSpeed,
+        travelTime: segment.travelTime,
+        startLat: segment.startLat,
+        startLng: segment.startLng,
+        endLat: segment.endLat,
+        endLng: segment.endLng,
+        visibleInMap: visibleInrixSegments.some(visible => visible.code === segment.code),
+      })),
+      transtarIncidents: transtarIncidents.map(incident => ({
+        id: incident.id,
+        desc: incident.desc,
+        location: incident.location,
+        lanes: incident.lanes,
+        status: incident.status,
+        time: incident.time,
+        date: incident.date,
+        vehicles: incident.vehicles,
+        lat: incident.lat,
+        lng: incident.lng,
+        visibleInMap: visibleTranStarIncidents.some(visible => visible.id === incident.id),
+      })),
+      laneClosures: transtarLaneClosures.map(closure => ({
+        id: closure.id,
+        roadway: closure.roadway,
+        location: closure.location,
+        lanes: closure.lanes,
+        duration: closure.duration,
+        status: closure.status,
+        agency: closure.agency,
+        detour: closure.detour,
+        hotspot: closure.hotspot,
+        startTime: closure.startTime,
+        endTime: closure.endTime,
+        lat: closure.lat,
+        lng: closure.lng,
+        visibleInMap: visibleTranStarLaneClosures.some(visible => visible.id === closure.id),
+      })),
+      floodRisks: transtarFloodRisks.map(risk => ({
+        id: risk.id,
+        sensorName: risk.sensorName,
+        radiusMiles: risk.radiusMiles,
+        alert: risk.precipitationAlert ? 'Rainfall alert' : risk.streamElevationAlert ? 'Stream elevation alert' : 'Elevated flood risk',
+        precipitationInches: risk.precipitationInches,
+        streamElevation: risk.streamElevation,
+        timestamp: risk.timestamp,
+        lat: risk.lat,
+        lng: risk.lng,
+        visibleInMap: visibleTranStarFloodRisks.some(visible => visible.id === risk.id),
+      })),
+      corridors: transtarCorridors.map(corridor => ({
+        label: corridor.label,
+        direction: corridor.dir,
+        group: corridor.group,
+        travelMin: corridor.travelMin,
+        delayMin: corridor.delayMin,
+        avgSpeed: corridor.avgSpeed,
+        segmentCount: corridor.segments.length,
+        slowSegments: corridor.segments.filter(segment => segment.speedMph >= 0 && segment.speedMph < 25).length,
+        segmentDetails: corridor.segments.map(segment => ({
+          fromTo: segment.ft,
+          speedMph: segment.speedMph,
+          travelMinutes: segment.travelSec >= 0 ? Math.round(segment.travelSec / 60) : null,
+          delayMinutes: Math.round(segment.delaySec / 60),
+          lengthMiles: segment.lengthMi,
+        })),
+      })),
+    },
+    transit: {
+      totalTrips: filteredMetroUpdates.length,
+      mapVisibleTrips: mapMetroUpdates.length,
+      selectedTripId: selectedMetroId,
+      routeGroupsVisible: ROUTE_GROUPS
+        .filter(group => enabledMetroGroups.has(group.id))
+        .map(group => group.label),
+      routeGroups: ROUTE_GROUPS.map(group => {
+        const trips = filteredMetroUpdates.filter(update => {
+          const rail = update.routeType === 0 || update.routeType === 1 || update.routeType === 2
+          return group.routes === null
+            ? rail
+            : !rail && group.routes.has(metroRouteNumber(update.routeId, update.routeShortName))
+        })
+        const delayedTrips = trips.filter(update => (update.delaySeconds ?? 0) > 0)
+        return {
+          id: group.id,
+          label: group.label,
+          enabledOnMap: enabledMetroGroups.has(group.id),
+          trips: trips.length,
+          delayedTrips: delayedTrips.length,
+          maxDelayMinutes: delayedTrips.length > 0
+            ? Math.max(...delayedTrips.map(update => Math.round((update.delaySeconds ?? 0) / 60)))
+            : null,
+        }
+      }),
+      trips: filteredMetroUpdates.slice(0, ASSISTANT_METRO_TRIP_LIMIT).map(update => ({
+        id: update.id,
+        route: String(update.routeShortName ?? update.routeId),
+        routeLongName: update.routeLongName ?? null,
+        routeType: update.routeType ?? null,
+        tripId: update.tripId,
+        direction: update.directionId === 0 ? 'Outbound' : update.directionId === 1 ? 'Inbound' : null,
+        delayMinutes: update.delaySeconds == null ? null : Math.round(update.delaySeconds / 60),
+        arrivalTime: update.arrivalTime,
+        nextStopId: update.nextStopId,
+        vehicleId: update.vehicleId ?? null,
+        positionSource: update.positionSource ?? null,
+        isScheduled: Boolean(update.isScheduled),
+        lat: update.lat ?? null,
+        lng: update.lng ?? null,
+        visibleOnMap: mapMetroUpdateIds.has(update.id),
+      })),
+      busToNrg: {
+        trips: busToNrgTrips.length,
+        delayedTrips: busToNrgDelayedTrips.length,
+        maxDelayMinutes: busToNrgDelayedTrips.length > 0
+          ? Math.max(...busToNrgDelayedTrips.map(update => Math.round((update.delaySeconds ?? 0) / 60)))
+          : null,
+        nextTrips: busToNrgTrips.slice(0, 8).map(update => ({
+          route: String(update.routeShortName ?? update.routeId),
+          delayMinutes: update.delaySeconds == null ? null : Math.round(update.delaySeconds / 60),
+          arrivalTime: update.arrivalTime,
+          direction: update.directionId === 0 ? 'Outbound' : update.directionId === 1 ? 'Inbound' : null,
+        })),
+      },
+    },
+    cameras: {
+      total: sortedCameras.length,
+      liveFeeds: sortedCameras.filter(camera => Boolean(camera.streamUrl)).length,
+      mapLayerEnabled: camerasEnabled,
+      selectedCameraId,
+      selectedCamera: selectedCamera
+        ? {
+            id: selectedCamera.id,
+            name: selectedCamera.name,
+            highway: selectedCamera.highway,
+            direction: selectedCamera.direction,
+            lat: selectedCamera.lat,
+            lng: selectedCamera.lng,
+            hasLiveFeed: Boolean(selectedCamera.streamUrl),
+          }
+        : null,
+    },
+    nextMatch: nextMatch
+      ? {
+          label: `${nextMatch.homeTeam} vs ${nextMatch.awayTeam}`,
+          date: nextMatch.date,
+          kickoff: nextMatch.kickoff,
+          stage: nextMatch.stage,
+          daysUntil: nextDays,
+        }
+      : null,
+  }), [
+    alerts,
+    busToNrgDelayedTrips,
+    busToNrgTrips,
+    camerasEnabled,
+    clock,
+    enabledMetroGroups,
+    connected,
+    filteredMetroUpdates,
+    incidents,
+    inrixError,
+    inrixLoading,
+    mapExtent,
+    mapMetroUpdateIds,
+    mapMetroUpdates.length,
+    metroError,
+    metroLoading,
+    nextDays,
+    nextMatch,
+    observation,
+    segments,
+    selectedCamera,
+    selectedCameraId,
+    selectedIncidentId,
+    selectedMetroId,
+    selectedTranStarId,
+    sortedCameras,
+    transtarConnected,
+    transtarCorridors,
+    transtarError,
+    transtarFloodRisks,
+    transtarIncidents,
+    transtarLaneClosures,
+    transtarLoading,
+    visibleInrixIncidents,
+    visibleInrixSegments,
+    visibleInrixSegments.length,
+    visibleTranStarFloodRisks,
+    visibleTranStarIncidents,
+    visibleTranStarLaneClosures,
+  ])
 
   return (
     <div className="h-full min-h-0 min-w-0 flex flex-col bg-[#070c15] font-sans overflow-hidden relative">
@@ -352,6 +643,9 @@ export default function App() {
             selectedIncidentId={selectedIncidentId}
             onIncidentSelect={handleIncidentSelect}
             segments={segments}
+            inrixToken={inrixToken}
+            inrixSegmentsEnabled={inrixSegmentsEnabled}
+            onInrixSegmentsEnabledChange={setInrixSegmentsEnabled}
             metroUpdates={mapMetroUpdates}
             selectedMetroId={selectedMetroId}
             onMetroSelect={handleMetroSelect}
@@ -362,6 +656,7 @@ export default function App() {
             onTranStarSelect={handleTranStarSelect}
             onMapExtentChange={handleMapExtentChange}
           />
+          <DashboardAssistant context={assistantContext} />
 
           {/* Next match overlay */}
           {nextMatch && (
@@ -409,7 +704,7 @@ export default function App() {
             )}
 
             {/* Traffic legend overlay */}
-            {segments.length > 0 && (
+            {inrixSegmentsEnabled && inrixToken && (
               <div className="bg-[#09101e]/90 backdrop-blur-sm border border-white/[0.08] rounded px-2.5 py-2">
               <div className="text-[8px] font-mono tracking-[0.1em] text-[#4a5a72] uppercase mb-1.5">Traffic</div>
               {[

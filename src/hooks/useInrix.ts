@@ -122,14 +122,13 @@ function parseSegment(seg: any): InrixSegment | null {
   const sLng = seg.startPoint?.lng ?? seg.startLng ?? 0
   const eLat = seg.endPoint?.lat ?? seg.endLat ?? sLat
   const eLng = seg.endPoint?.lng ?? seg.endLng ?? sLng
-  if (!sLat || !sLng) return null
   const speed = Number(seg.speed ?? seg.currentSpeed ?? 0)
-  const avg = Number(seg.averageSpeed ?? seg.freeFlowSpeed ?? seg.referenceSpeed ?? 60)
+  const avg = Number(seg.averageSpeed ?? seg.average ?? seg.freeFlowSpeed ?? seg.referenceSpeed ?? seg.reference ?? 60)
   return {
     code: String(seg.code ?? seg.segmentId ?? ''),
     speed,
     averageSpeed: avg || 60,
-    travelTime: Number(seg.travelTime ?? 0),
+    travelTime: Number(seg.travelTime ?? seg.travelTimeMinutes ?? 0),
     startLat: Number(sLat),
     startLng: Number(sLng),
     endLat: Number(eLat),
@@ -152,7 +151,7 @@ async function fetchSegments(token: string): Promise<InrixSegment[]> {
 
   const raw: unknown =
     data?.result?.segmentSpeeds?.[0]?.segments ??
-    data?.result?.segments ??
+    data?.result?.segmentspeeds?.[0]?.segments ??
     data?.result?.segments ??
     data?.result ??
     data?.segments ??

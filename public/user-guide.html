@@ -811,6 +811,7 @@
           <thead><tr><th>Layer</th><th>Default</th><th>Description</th></tr></thead>
           <tbody>
             <tr><td>Traffic</td><td>On</td><td>Real-time traffic color overlay on roads</td></tr>
+            <tr><td>INRIX Segments</td><td>Off</td><td>INRIX traffic speed tile overlay; requires INRIX token</td></tr>
             <tr><td>Cameras</td><td>Off</td><td>Show or hide live camera pins on the map</td></tr>
             <tr><td>METRO Transit</td><td>On</td><td>Show or hide bus and rail pins on the map</td></tr>
             <tr><td>GOES Satellite</td><td>Off</td><td>NOAA GOES-18 live cloud imagery</td></tr>
@@ -945,6 +946,7 @@
         <div class="color-chip"><span class="chip-swatch" style="background:#ef4444"></span>Severe &lt;40%</div>
       </div>
       <h3>Map Traffic Summary Badge</h3>
+      <p>The <strong>INRIX Segments</strong> layer uses INRIX traffic tiles. It can show live speed graphics even when the raw segment-speed API does not provide line geometry for custom drawing.</p>
       <p>The bottom-left map badge summarizes traffic data inside the current map view. Counts update when the map is panned or zoomed.</p>
       <div class="table-wrap">
         <table>
@@ -956,6 +958,19 @@
         </table>
       </div>
 
+      <h3>Ask Dashboard Assistant</h3>
+      <p>The <strong>Ask Dashboard</strong> button opens a read-only AI briefing panel on the map. It uses a live dashboard snapshot, including map extent, data status, selections, weather, alerts, INRIX traffic, TranStar incidents/closures/flood risk/corridors, METRO trips and delays, cameras, and the next NRG match.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Prompt</th><th>Use</th></tr></thead>
+          <tbody>
+            <tr><td>Summarize current traffic near NRG</td><td>Creates a concise operations briefing</td></tr>
+            <tr><td>What are the biggest risks right now?</td><td>Highlights incidents, closures, flood risk, weather, and transit concerns</td></tr>
+            <tr><td>Are there lane closures in the current map view?</td><td>Focuses on visible TranStar lane closure records</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="note">The assistant is read-only and requires server-side <code>OPENAI_API_KEY</code> configuration in Netlify or the local server environment.</div>
     </div>
     <!-- 6. Right Panel -->
     <div class="section" id="right-panel">
@@ -1072,6 +1087,7 @@
             <tr><td>INRIX</td><td>Traffic incidents and corridor speed conditions</td><td>~2 min</td></tr>
             <tr><td>TxDOT DriveTexas</td><td>Live traffic camera video</td><td>Live</td></tr>
             <tr><td>Houston TranStar</td><td>Incidents, lane closures, roadway flood risk, and corridor speeds</td><td>~60 sec</td></tr>
+            <tr><td>OpenAI</td><td>Read-only dashboard assistant summaries</td><td>On request</td></tr>
             <tr><td>Google Maps</td><td>Satellite imagery and real-time traffic layers</td><td>Live</td></tr>
             <tr><td>NOAA GOES-18</td><td>Satellite cloud imagery</td><td>~10 min</td></tr>
           </tbody>
@@ -1115,6 +1131,13 @@
           <div class="tip-body">
             <strong>Traffic Monitoring</strong>
             <span>Watch for red road lines on I-610 South Loop or US-59 near NRG. Use the INRIX Traffic panel on the right for a list of active incidents. Click any incident to zoom the map to its exact location.</span>
+          </div>
+        </li>
+        <li>
+          <span class="tip-icon">AI</span>
+          <div class="tip-body">
+            <strong>AI Briefing</strong>
+            <span>Use Ask Dashboard for a short operational briefing. Configure <code>OPENAI_API_KEY</code> server-side before using it in production.</span>
           </div>
         </li>
         <li>

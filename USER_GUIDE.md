@@ -110,6 +110,7 @@ Opens a panel to turn layers on or off and change the map style.
 | Layer | Default | Description |
 |---|---|---|
 | Traffic | On | Real-time traffic color overlay |
+| INRIX Segments | Off | INRIX traffic speed tile overlay; requires INRIX token |
 | Cameras | Off | Show or hide all live camera pins |
 | METRO Transit | On | Show or hide all bus and rail pins |
 | GOES Satellite | Off | NOAA GOES-18 live cloud imagery |
@@ -197,6 +198,8 @@ Color-coded road lines along key corridors (I-610, US-59):
 
 ### Map Traffic Summary Badge
 
+The **INRIX Segments** layer uses INRIX traffic tiles. It can show live speed graphics even when the raw segment-speed API does not provide line geometry for custom drawing.
+
 The bottom-left map badge summarizes traffic data inside the current map view. Counts update when the map is panned or zoomed.
 
 | Line | Counts |
@@ -204,6 +207,15 @@ The bottom-left map badge summarizes traffic data inside the current map view. C
 | **INRIX** | Visible incidents and visible speed segments |
 | **TranStar** | Visible incidents, lane closures, and roadway flood risks |
 
+
+### Ask Dashboard Assistant
+
+The **Ask Dashboard** button opens a read-only AI briefing panel on the map.
+
+- Uses a live dashboard snapshot, including map extent, data status, selections, weather, alerts, INRIX traffic, TranStar incidents/closures/flood risk/corridors, METRO trips and delays, cameras, and next NRG match
+- Supports suggested prompts such as "Summarize current traffic near NRG" and "What are the biggest risks right now?"
+- Does not change map layers, filters, selections, or camera feeds
+- Requires server-side `OPENAI_API_KEY` configuration in Netlify or the local server environment
 ---
 
 ## Right Panel
@@ -262,6 +274,7 @@ A scrolling status strip showing a live summary of all data sources:
 | INRIX | Traffic incidents and speed data | ~2 min |
 | TxDOT DriveTexas | Live traffic camera video | Live |
 | Houston TranStar | Incidents, lane closures, roadway flood risk, corridor speeds | ~60 sec |
+| OpenAI | Read-only dashboard assistant summaries | On request |
 | Google Maps | Satellite and traffic layers | Live |
 | NOAA GOES-18 | Satellite cloud imagery | ~10 min |
 
@@ -279,6 +292,7 @@ A scrolling status strip showing a live summary of all data sources:
 - **Camera feeds:** Turn on the Cameras layer in Map Details to see all camera pins, or select a camera from the right panel to jump directly to it
 - **Traffic:** Red road lines on I-610 South Loop or US-59 near NRG indicate significant congestion — plan alternate routes
 - **Map summary:** Pan or zoom the map to update the traffic summary badge to the current visible area
+- **AI assistant:** Use **Ask Dashboard** for a short operational briefing; configure `OPENAI_API_KEY` server-side before using it in production
 
 ---
 

@@ -39,6 +39,10 @@
   path = "/inrix-segment-api/*"
   function = "api-proxy"
 
+
+[[edge_functions]]
+  path = "/ai-assistant"
+  function = "ai-assistant"
 # SPA fallback — serves index.html for all client-side routes
 [[redirects]]
   from = "/*"

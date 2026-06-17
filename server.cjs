@@ -12,6 +12,8 @@ const PORT = process.env.PORT || 3000
 const DIST_DIR = path.join(__dirname, 'dist')
 // Set METRO_API_KEY as an environment variable before running
 const METRO_API_KEY = process.env.METRO_API_KEY || ''
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY || ''
+const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-5.5'
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -107,6 +109,116 @@ function proxy(req, res, rule) {
   req.pipe(upstream)
 }
 
+function readJson(req) {
+  return new Promise((resolve, reject) => {
+    let body = ''
+    req.on('data', chunk => {
+      body += chunk
+      if (body.length > 1_000_000) {
+        req.destroy()
+        reject(new Error('Request body too large'))
+      }
+    })
+    req.on('end', () => {
+      try { resolve(JSON.parse(body || '{}')) } catch (err) { reject(err) }
+    })
+    req.on('error', reject)
+  })
+}
+
+function extractOpenAiText(data) {
+  if (typeof data?.output_text === 'string') return data.output_text
+  const parts = []
+  for (const item of data?.output || []) {
+    for (const content of item?.content || []) {
+      if (typeof content?.text === 'string') parts.push(content.text)
+    }
+  }
+  return parts.join('\n').trim()
+}
+
+function sendJson(res, status, data) {
+  res.writeHead(status, {
+    'Content-Type': 'application/json',
+    'Access-Control-Allow-Origin': '*',
+  })
+  res.end(JSON.stringify(data))
+}
+
+async function handleAiAssistant(req, res) {
+  if (req.method !== 'POST') {
+    sendJson(res, 405, { error: 'Method not allowed' })
+    return
+  }
+  if (!OPENAI_API_KEY) {
+    sendJson(res, 501, { error: 'OPENAI_API_KEY is not configured.' })
+    return
+  }
+
+  let payload
+  try {
+    payload = await readJson(req)
+  } catch {
+    sendJson(res, 400, { error: 'Invalid JSON body' })
+    return
+  }
+
+  const question = String(payload.question || '').trim()
+  if (!question) {
+    sendJson(res, 400, { error: 'Question is required' })
+    return
+  }
+
+  const systemPrompt = [
+    'You are the World Cup 2026 Houston mobility dashboard assistant.',
+    'Use only the dashboard context provided by the app.',
+    'The dashboard context includes live sections for dataStatus, selections, weather, alerts, traffic, transit, cameras, map extent, and nextMatch. Inspect the relevant section before saying data is unavailable.',
+    'Give concise operational briefings for transportation staff.',
+    'For a traffic summary, use this format with no intro paragraph: Overall: one sentence. Watch: 2 to 4 bullets, highest operational risk first. Next: one sentence with the most useful next action or monitoring focus.',
+    'Prioritize current map-view traffic, TranStar lane closures, flood risks, weather alerts, METRO status, and next NRG match timing.',
+    'For METRO bus delay questions, use transit.busToNrg delayedTrips, maxDelayMinutes, and nextTrips. A delayMinutes value of 0 means on time; null means scheduled/unknown.',
+    'For highway delay or speed-segment questions, use traffic.inrixSegments when records exist. If INRIX segment records lack readable road names or geometry, say INRIX speed records are available but use traffic.corridors delayMin, avgSpeed, slowSegments, and segmentDetails for named highway summaries. Do not say speed data is unavailable when TranStar corridor data is present.',
+    'Mention at most 3 specific roads/incidents unless asked for details.',
+    'If data is missing, say it is not available in the dashboard context.',
+    'Do not invent incident locations, routes, closures, or recommendations.',
+    'Keep answers under 110 words unless the user explicitly asks for more.',
+  ].join(' ')
+
+  try {
+    const upstream = await fetch('https://api.openai.com/v1/responses', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${OPENAI_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: OPENAI_MODEL,
+        input: [
+          { role: 'system', content: [{ type: 'input_text', text: systemPrompt }] },
+          {
+            role: 'user',
+            content: [{
+              type: 'input_text',
+              text: `Question: ${question}\n\nDashboard context:\n${JSON.stringify(payload.context || {}, null, 2)}`,
+            }],
+          },
+        ],
+        max_output_tokens: 300,
+      }),
+    })
+    const data = await upstream.json().catch(() => null)
+    if (!upstream.ok) {
+      console.error('[ai-assistant] OpenAI error', upstream.status, data)
+      sendJson(res, 502, { error: 'OpenAI request failed.' })
+      return
+    }
+    sendJson(res, 200, { answer: extractOpenAiText(data) || 'No answer returned.' })
+  } catch (err) {
+    console.error('[ai-assistant]', err.message)
+    sendJson(res, 502, { error: 'Assistant request failed.' })
+  }
+}
+
 function serveStatic(req, res) {
   // Strip query string for file lookup
   const pathname = req.url.split('?')[0]
@@ -141,6 +253,7 @@ const server = http.createServer((req, res) => {
 
   const rule = PROXY_RULES.find(r => req.url === r.prefix.replace(/\/$/, '') || req.url.startsWith(r.prefix))
   if (rule) { proxy(req, res, rule); return }
+  if (req.url.split('?')[0] === '/ai-assistant') { handleAiAssistant(req, res); return }
 
   serveStatic(req, res)
 })

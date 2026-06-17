@@ -15,6 +15,9 @@ interface MapViewProps {
   selectedIncidentId: string | null
   onIncidentSelect: (id: string | null) => void
   segments: InrixSegment[]
+  inrixToken: string | null
+  inrixSegmentsEnabled: boolean
+  onInrixSegmentsEnabledChange: (val: boolean) => void
   metroUpdates: MetroTripUpdate[]
   selectedMetroId: string | null
   onMetroSelect: (id: string | null) => void
@@ -70,6 +73,17 @@ function googleTrafficLayer() {
     opacity: 0.82,
     attribution: 'Traffic data © Google',
   })
+}
+
+function inrixTrafficTileLayer(token: string) {
+  return L.tileLayer(
+    `https://tile-api.inrix.com/v1/tiles/{z}/{x}/{y}.png?roadsegmenttype=XDS&opacity=85&FRCLevel=1,2,3&penWidth=4&accessToken=${encodeURIComponent(token)}`,
+    {
+      maxZoom: 21,
+      opacity: 0.85,
+      attribution: 'Traffic data © INRIX',
+    }
+  )
 }
 
 function goesSatelliteLayer() {
@@ -288,7 +302,7 @@ function metroRouteLabel(update: MetroTripUpdate) {
   return update.routeLongName ? `${shortName} - ${update.routeLongName}` : `Route ${shortName}`
 }
 
-export function MapView({ cameras, selectedCameraId, onCameraSelect, camerasEnabled, onCamerasEnabledChange, incidents, selectedIncidentId, onIncidentSelect, segments, metroUpdates, selectedMetroId, onMetroSelect, transtarIncidents, transtarLaneClosures, transtarFloodRisks, selectedTranStarId, onTranStarSelect, onMapExtentChange }: MapViewProps) {
+export function MapView({ cameras, selectedCameraId, onCameraSelect, camerasEnabled, onCamerasEnabledChange, incidents, selectedIncidentId, onIncidentSelect, segments, inrixToken, inrixSegmentsEnabled, onInrixSegmentsEnabledChange, metroUpdates, selectedMetroId, onMetroSelect, transtarIncidents, transtarLaneClosures, transtarFloodRisks, selectedTranStarId, onTranStarSelect, onMapExtentChange }: MapViewProps) {
   const [mapType, setMapType] = useState<BaseMapType>('satellite')
   const [switcherOpen, setSwitcherOpen] = useState(false)
   const [trafficEnabled, setTrafficEnabled] = useState(true)
@@ -301,6 +315,7 @@ export function MapView({ cameras, selectedCameraId, onCameraSelect, camerasEnab
   const baseLayerRef = useRef<L.Layer | null>(null)
   const goesLayerRef = useRef<L.TileLayer | null>(null)
   const trafficLayerRef = useRef<L.TileLayer | null>(null)
+  const inrixTilesLayerRef = useRef<L.TileLayer | null>(null)
   const cameraMarkersRef = useRef<Map<string, L.Marker>>(new Map())
   const hadFocusedSelectionRef = useRef(false)
   const segmentLayerRef = useRef<L.LayerGroup | null>(null)
@@ -438,6 +453,23 @@ export function MapView({ cameras, selectedCameraId, onCameraSelect, camerasEnab
     layer.bringToFront()
     trafficLayerRef.current = layer
   }, [trafficEnabled, mapType])
+
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map) return
+
+    if (inrixTilesLayerRef.current) {
+      map.removeLayer(inrixTilesLayerRef.current)
+      inrixTilesLayerRef.current = null
+    }
+
+    if (!inrixSegmentsEnabled || !inrixToken) return
+
+    const layer = inrixTrafficTileLayer(inrixToken)
+    layer.addTo(map)
+    layer.bringToFront()
+    inrixTilesLayerRef.current = layer
+  }, [inrixSegmentsEnabled, inrixToken, mapType])
 
   // Update INRIX segment speed polylines
   useEffect(() => {
@@ -821,6 +853,47 @@ export function MapView({ cameras, selectedCameraId, onCameraSelect, camerasEnab
                   className={[
                     'block w-4 h-4 rounded-full bg-white shadow transition-transform',
                     trafficEnabled ? 'translate-x-4' : 'translate-x-0',
+                  ].join(' ')}
+                />
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                if (inrixToken) onInrixSegmentsEnabledChange(!inrixSegmentsEnabled)
+              }}
+              disabled={!inrixToken}
+              className="w-full flex items-center justify-between rounded-md px-2 py-2 hover:bg-black/[0.04] transition-colors disabled:cursor-not-allowed disabled:opacity-55"
+              title={inrixToken ? 'Show INRIX traffic segment tile overlay' : 'INRIX token not available'}
+            >
+              <span className="flex items-center gap-2">
+                <span
+                  className={[
+                    'w-10 h-10 rounded-md border flex items-center justify-center',
+                    inrixSegmentsEnabled && inrixToken ? 'border-orange-500 bg-orange-50 text-orange-600' : 'border-black/10 bg-[#f1f3f4] text-[#5f6368]',
+                  ].join(' ')}
+                >
+                  <Car size={19} />
+                </span>
+                <span>
+                  <span className={`block text-[13px] ${inrixSegmentsEnabled && inrixToken ? 'text-orange-600 font-medium' : 'text-[#3c4043]'}`}>
+                    INRIX Segments
+                  </span>
+                  <span className="block text-[10px] text-[#70757a] leading-tight">
+                    Speed tile overlay
+                  </span>
+                </span>
+              </span>
+              <span
+                className={[
+                  'w-9 h-5 rounded-full p-0.5 transition-colors',
+                  inrixSegmentsEnabled && inrixToken ? 'bg-orange-500' : 'bg-[#dadce0]',
+                ].join(' ')}
+              >
+                <span
+                  className={[
+                    'block w-4 h-4 rounded-full bg-white shadow transition-transform',
+                    inrixSegmentsEnabled && inrixToken ? 'translate-x-4' : 'translate-x-0',
                   ].join(' ')}
                 />
               </span>
