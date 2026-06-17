@@ -11,7 +11,7 @@ import { useWeather } from '@/hooks/useWeather'
 import { useInrix } from '@/hooks/useInrix'
 import { useMetroTransit } from '@/hooks/useMetroTransit'
 import { useTranStar } from '@/hooks/useTranStar'
-import { NRG_MATCHES } from '@/data/matches'
+import { findNextNrgMatch, NRG_MATCHES } from '@/data/matches'
 import { ALL_CAMERAS, MAP_CAMERAS } from '@/data/cameras'
 import { BusFront, CalendarDays, Cctv, Map as MapIcon, Route, TriangleAlert } from 'lucide-react'
 import type { MapExtent } from '@/types'
@@ -31,6 +31,14 @@ function MapFlagBadge({ label, code }: { label: string; code?: string }) {
       )}
     </span>
   )
+}
+
+function countLabel(count: number, singular: string, plural = `${singular}s`) {
+  return `${count} ${count === 1 ? singular : plural}`
+}
+
+function pointInExtent(lat: number, lng: number, extent: MapExtent) {
+  return lat <= extent.north && lat >= extent.south && lng <= extent.east && lng >= extent.west
 }
 
 type MobileTab = 'map' | 'schedule' | 'transit' | 'routes' | 'cameras' | 'traffic'
@@ -96,34 +104,32 @@ export default function App() {
   const { updates: metroUpdates, loading: metroLoading, error: metroError, lastUpdated: metroUpdated, refresh: metroRefresh } = useMetroTransit()
   const { incidents: transtarIncidents, laneClosures: transtarLaneClosures, floodRisks: transtarFloodRisks, corridors: transtarCorridors, connected: transtarConnected, loading: transtarLoading, error: transtarError, lastUpdated: transtarUpdated, refresh: transtarRefresh } = useTranStar()
 
+  const visibleInrixIncidents = useMemo(() => {
+    if (!mapExtent) return incidents
+    return incidents.filter(incident => pointInExtent(incident.lat, incident.lng, mapExtent))
+  }, [incidents, mapExtent])
+
+  const visibleInrixSegments = useMemo(() => {
+    if (!mapExtent) return segments
+    return segments.filter(segment =>
+      pointInExtent(segment.startLat, segment.startLng, mapExtent) ||
+      pointInExtent(segment.endLat, segment.endLng, mapExtent)
+    )
+  }, [segments, mapExtent])
+
   const visibleTranStarLaneClosures = useMemo(() => {
     if (!mapExtent) return transtarLaneClosures
-    return transtarLaneClosures.filter(closure =>
-      closure.lat <= mapExtent.north &&
-      closure.lat >= mapExtent.south &&
-      closure.lng <= mapExtent.east &&
-      closure.lng >= mapExtent.west
-    )
+    return transtarLaneClosures.filter(closure => pointInExtent(closure.lat, closure.lng, mapExtent))
   }, [transtarLaneClosures, mapExtent])
 
   const visibleTranStarIncidents = useMemo(() => {
     if (!mapExtent) return transtarIncidents
-    return transtarIncidents.filter(incident =>
-      incident.lat <= mapExtent.north &&
-      incident.lat >= mapExtent.south &&
-      incident.lng <= mapExtent.east &&
-      incident.lng >= mapExtent.west
-    )
+    return transtarIncidents.filter(incident => pointInExtent(incident.lat, incident.lng, mapExtent))
   }, [transtarIncidents, mapExtent])
 
   const visibleTranStarFloodRisks = useMemo(() => {
     if (!mapExtent) return transtarFloodRisks
-    return transtarFloodRisks.filter(risk =>
-      risk.lat <= mapExtent.north &&
-      risk.lat >= mapExtent.south &&
-      risk.lng <= mapExtent.east &&
-      risk.lng >= mapExtent.west
-    )
+    return transtarFloodRisks.filter(risk => pointInExtent(risk.lat, risk.lng, mapExtent))
   }, [transtarFloodRisks, mapExtent])
 
   const filteredMetroUpdates = useMemo(() => {
@@ -166,12 +172,11 @@ export default function App() {
     return () => clearInterval(timer)
   }, [])
 
-  const criticalIncidents = incidents.filter(i => i.severity >= 3)
-
-  const nextMatch = NRG_MATCHES.find(m => m.status === 'upcoming' || m.status === 'live')
+  const nextMatch = useMemo(() => findNextNrgMatch(NRG_MATCHES, clock), [clock])
   const nextDays = nextMatch
     ? (() => {
-        const today = new Date(); today.setHours(0, 0, 0, 0)
+        const today = new Date(clock)
+        today.setHours(0, 0, 0, 0)
         return Math.ceil((new Date(nextMatch.date + 'T00:00:00').getTime() - today.getTime()) / 86_400_000)
       })()
     : null
@@ -293,17 +298,6 @@ export default function App() {
 
         {/* Right: Incidents + Clock */}
         <div className="app-clock flex items-center gap-2 md:gap-2.5 flex-shrink-0">
-          {criticalIncidents.length > 0 && (
-            <div className="hidden sm:flex items-center gap-1.5 px-2 py-1 rounded bg-orange-500/10 border border-orange-500/20">
-              <span className="w-1.5 h-1.5 rounded-full bg-orange-400 animate-pulse inline-block" />
-              <span className="text-[9px] font-mono text-orange-400">
-                {criticalIncidents.length} Critical Incident{criticalIncidents.length > 1 ? 's' : ''}
-              </span>
-            </div>
-          )}
-
-          <div className="hidden sm:block w-px h-5 bg-white/[0.08]" />
-
           <div className="text-right">
             <div className="text-[11px] md:text-[13px] font-mono font-bold text-[#e8edf5] tabular-nums">
               {clock.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
@@ -436,15 +430,24 @@ export default function App() {
             )}
           </div>
 
-          {/* Incident mini badge */}
-          <div className="map-summary absolute bottom-2 left-2 right-2 md:bottom-8 md:left-3 md:right-auto z-[1000] flex flex-wrap items-center gap-1.5 md:gap-2 pointer-events-none">
-            {incidents.length > 0 && (
-              <div className="bg-[#09101e]/80 backdrop-blur-sm border border-orange-500/20 rounded px-2 md:px-2.5 py-1 md:py-1.5">
-                <span className="text-[8px] font-mono text-orange-400">
-                  💥 {incidents.length} incident{incidents.length !== 1 ? 's' : ''}
+          {/* Traffic summary */}
+          <div className="map-summary absolute bottom-2 left-2 right-2 md:bottom-8 md:left-3 md:right-auto z-[1000] pointer-events-none">
+            <div className="inline-flex max-w-full flex-col gap-1 bg-[#09101e]/88 backdrop-blur-sm border border-orange-500/25 rounded px-2.5 py-2 shadow-[0_8px_20px_rgba(0,0,0,0.35)]">
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[8px] md:text-[9px] font-mono">
+                <span className="w-1.5 h-1.5 rounded-full bg-orange-400 shadow-[0_0_8px_rgba(251,146,60,0.9)] flex-shrink-0" />
+                <span className="text-[#7a8ba8]">INRIX</span>
+                <span className="text-orange-300">
+                  {countLabel(visibleInrixIncidents.length, 'incident')} / {countLabel(visibleInrixSegments.length, 'segment')}
                 </span>
               </div>
-            )}
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[8px] md:text-[9px] font-mono">
+                <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.85)] flex-shrink-0" />
+                <span className="text-[#7a8ba8]">TranStar</span>
+                <span className="text-cyan-200">
+                  {countLabel(visibleTranStarIncidents.length, 'incident')} / {countLabel(visibleTranStarLaneClosures.length, 'lane closure')} / {countLabel(visibleTranStarFloodRisks.length, 'flood risk')}
+                </span>
+              </div>
+            </div>
           </div>
 
           {/* ── Mobile/tablet panel overlays (hidden on xl+) ── */}

@@ -1,5 +1,33 @@
 import type { WorldCupMatch } from '@/types'
 
+const MATCH_DISPLAY_WINDOW_MS = 4 * 60 * 60 * 1000
+
+export function matchKickoffDate(match: WorldCupMatch): Date {
+  const parsed = match.kickoff.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)/i)
+  if (!parsed) return new Date(`${match.date}T12:00:00-05:00`)
+
+  const [, rawHour, rawMinute, meridiem] = parsed
+  let hour = parseInt(rawHour, 10)
+  const minute = parseInt(rawMinute, 10)
+  if (meridiem.toUpperCase() === 'PM' && hour !== 12) hour += 12
+  if (meridiem.toUpperCase() === 'AM' && hour === 12) hour = 0
+
+  return new Date(`${match.date}T${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}:00-05:00`)
+}
+
+export function isMatchDisplayable(match: WorldCupMatch, now = new Date()): boolean {
+  if (match.status === 'completed') return false
+  return matchKickoffDate(match).getTime() + MATCH_DISPLAY_WINDOW_MS >= now.getTime()
+}
+
+export function findNextNrgMatch(matches: WorldCupMatch[], now = new Date()): WorldCupMatch | null {
+  const candidates = matches
+    .filter(match => isMatchDisplayable(match, now))
+    .sort((a, b) => matchKickoffDate(a).getTime() - matchKickoffDate(b).getTime())
+
+  return candidates[0] ?? null
+}
+
 export const NRG_MATCHES: WorldCupMatch[] = [
   {
     id: 'm1',

@@ -1,4 +1,5 @@
 import type { WorldCupMatch } from '@/types'
+import { isMatchDisplayable } from '@/data/matches'
 
 function formatDate(dateStr: string): string {
   const d = new Date(dateStr + 'T12:00:00')
@@ -131,7 +132,7 @@ function MatchCard({ match }: { match: WorldCupMatch }) {
 }
 
 export function MatchSchedule({ matches }: { matches: WorldCupMatch[] }) {
-  const activeMatches = matches.filter(match => match.status !== 'completed')
+  const activeMatches = matches.filter(match => isMatchDisplayable(match))
 
   return (
     <div className="h-full flex flex-col overflow-hidden">

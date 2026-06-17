@@ -707,7 +707,6 @@
             <tr><td>Weather Strip</td><td>Live NRG-area conditions: sky description · temperature · feels like · wind speed · relative humidity</td></tr>
             <tr><td>Weather Alerts</td><td>Pulsing severity badges for active NWS alerts. Hover any badge for the full headline</td></tr>
             <tr><td>Clock</td><td>Live CDT time and current date — top right</td></tr>
-            <tr><td>Critical Incidents</td><td>Orange pulsing label appears when INRIX reports high-severity incidents</td></tr>
           </tbody>
         </table>
       </div>
@@ -725,7 +724,7 @@
 
       <h3>Game Information (top 30%)</h3>
       <p>
-        Displays the World Cup 2026 NRG Stadium match schedule. Each card shows the home and away teams with country flags, kickoff time, group or stage, and match status. Upcoming matches show a countdown (<em>In Xd</em>) and today's match is highlighted.
+        Displays the World Cup 2026 NRG Stadium match schedule. Each card shows the home and away teams with country flags, kickoff time, group or stage, and match status. Upcoming matches show a countdown (<em>In Xd</em>) and today's match is highlighted. The next match advances automatically 4 hours after kickoff.
       </p>
 
       <h3>METRO Live Transit — World Cup Houston 2026 (bottom 70%)</h3>
@@ -945,8 +944,19 @@
         <div class="color-chip"><span class="chip-swatch" style="background:#f97316"></span>Heavy 40–64%</div>
         <div class="color-chip"><span class="chip-swatch" style="background:#ef4444"></span>Severe &lt;40%</div>
       </div>
-    </div>
+      <h3>Map Traffic Summary Badge</h3>
+      <p>The bottom-left map badge summarizes traffic data inside the current map view. Counts update when the map is panned or zoomed.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Line</th><th>Counts</th></tr></thead>
+          <tbody>
+            <tr><td>INRIX</td><td>Visible incidents and visible speed segments</td></tr>
+            <tr><td>TranStar</td><td>Visible incidents, lane closures, and roadway flood risks</td></tr>
+          </tbody>
+        </table>
+      </div>
 
+    </div>
     <!-- 6. Right Panel -->
     <div class="section" id="right-panel">
       <div class="section-header">
@@ -957,8 +967,8 @@
         </div>
       </div>
 
-      <h3>Camera Feeds (top 68%)</h3>
-      <p>Live traffic camera feeds from TxDOT DriveTexas (live video) and Houston TranStar (snapshot images), sorted by distance from NRG Stadium — closest cameras appear first.</p>
+      <h3>Camera Feeds (top 58%)</h3>
+      <p>Live traffic camera feeds from TxDOT DriveTexas, sorted by distance from NRG Stadium � closest cameras appear first.</p>
       <div class="table-wrap">
         <table>
           <thead><tr><th>Action</th><th>Result</th></tr></thead>
@@ -969,18 +979,25 @@
         </table>
       </div>
 
-      <h3>INRIX Traffic — 2 Hours (bottom 32%)</h3>
-      <p>Lists active traffic incidents within a 2-hour window around the Houston area.</p>
-      <div class="table-wrap">
-        <table>
-          <thead><tr><th>Action</th><th>Result</th></tr></thead>
-          <tbody>
-            <tr><td>Click an incident</td><td>Zooms the map to its location and shows details</td></tr>
-            <tr><td>Click the selected incident again</td><td>Deselects and returns the map to the default view</td></tr>
-            <tr><td>Status dot color</td><td>Green = connected · Amber = loading · Red = error</td></tr>
-          </tbody>
-        </table>
-      </div>
+      <h3>Traffic Panel (bottom 42%)</h3>
+      <p>Shows two traffic tabs: <strong>INRIX</strong> and <strong>TranStar</strong>.</p>
+
+      <h4>INRIX Tab</h4>
+      <ul>
+        <li>Lists active INRIX traffic incidents within a 2-hour window</li>
+        <li>Shows incident type, description, severity, and time</li>
+        <li>Click an incident to zoom the map to its location and show details</li>
+        <li>Click the selected incident again to deselect and return to the default view</li>
+      </ul>
+
+      <h4>TranStar Tab</h4>
+      <ul>
+        <li>Lists Houston TranStar incidents, lane closures, and roadway flood risks in the current map extent</li>
+        <li>Optional <strong>2h filter</strong> limits TranStar incidents to the last 2 hours</li>
+        <li>Click any row to zoom the map to its location and open the popup</li>
+        <li>Lane closures show hotspot indicators when available</li>
+        <li>Roadway flood risks show the sensor name and risk radius</li>
+      </ul>
     </div>
 
     <!-- 7. Weather Alerts -->
@@ -1029,7 +1046,7 @@
             <tr><td>3</td><td>METRO live bus trips and scheduled rail departures summary</td></tr>
             <tr><td>4</td><td>Live camera feed count</td></tr>
             <tr><td>5</td><td>Map points of interest: NRG Stadium and Fan Festival Entrance</td></tr>
-            <tr><td>6</td><td>Next scheduled NRG match: teams, date, and kickoff time</td></tr>
+            <tr><td>6</td><td>Next scheduled NRG match: teams, date, kickoff time, and automatic advancement</td></tr>
             <tr><td>7</td><td>Current map style and background information</td></tr>
           </tbody>
         </table>
@@ -1054,7 +1071,7 @@
             <tr><td>Houston METRO</td><td>Rail timetable (Red, Green, and Purple Lines)</td><td>At startup</td></tr>
             <tr><td>INRIX</td><td>Traffic incidents and corridor speed conditions</td><td>~2 min</td></tr>
             <tr><td>TxDOT DriveTexas</td><td>Live traffic camera video</td><td>Live</td></tr>
-            <tr><td>Houston TranStar</td><td>Traffic camera snapshot images</td><td>~60 sec</td></tr>
+            <tr><td>Houston TranStar</td><td>Incidents, lane closures, roadway flood risk, and corridor speeds</td><td>~60 sec</td></tr>
             <tr><td>Google Maps</td><td>Satellite imagery and real-time traffic layers</td><td>Live</td></tr>
             <tr><td>NOAA GOES-18</td><td>Satellite cloud imagery</td><td>~10 min</td></tr>
           </tbody>

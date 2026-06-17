@@ -46,6 +46,7 @@ Displays the World Cup 2026 match schedule for NRG Stadium.
 - Shows home and away teams with country flags
 - Displays kickoff time, group/stage, and match status
 - Highlights upcoming matches with countdown ("In Xd" or **TODAY**)
+- Automatically advances past a match 4 hours after kickoff, so the next NRG match appears without manually changing the match status
 
 ---
 
@@ -194,26 +195,46 @@ Color-coded road lines along key corridors (I-610, US-59):
 | Orange | Heavy congestion (40–64%) |
 | Red | Severe congestion (<40%) |
 
+### Map Traffic Summary Badge
+
+The bottom-left map badge summarizes traffic data inside the current map view. Counts update when the map is panned or zoomed.
+
+| Line | Counts |
+|---|---|
+| **INRIX** | Visible incidents and visible speed segments |
+| **TranStar** | Visible incidents, lane closures, and roadway flood risks |
+
 ---
 
 ## Right Panel
 
-### Camera Feeds (top 68%)
+### Camera Feeds (top 58%)
 
 Displays live traffic camera feeds sorted by proximity to NRG Stadium (closest first).
 
-- **Click a camera** to select it — the map flies to that camera's location
+- **Click a camera** to select it - the map flies to that camera's location
 - **Click again** to deselect
-- Sources: TxDOT DriveTexas (live video) and Houston TranStar (snapshot images)
+- Sources: TxDOT DriveTexas live video feeds
 
-### INRIX Traffic (2 Hours) (bottom 32%)
+### Traffic Panel (bottom 42%)
 
-Lists active traffic incidents within a 2-hour window around the Houston area.
+Shows two traffic tabs: **INRIX** and **TranStar**.
 
+#### INRIX Tab
+
+- Lists active INRIX traffic incidents within a 2-hour window
 - Shows incident type, description, severity, and time
 - **Click an incident** to zoom the map to its location
 - **Click again** to deselect and return to default view
 - Severity: Low / Medium / High / Critical
+
+#### TranStar Tab
+
+- Lists Houston TranStar incidents, lane closures, and roadway flood risks in the current map extent
+- Optional **2h filter** limits TranStar incidents to the last 2 hours
+- **Click any row** to zoom the map to its location and open the popup
+- Lane closures show hotspot indicators when available
+- Roadway flood risks show the sensor name and risk radius
 
 ---
 
@@ -226,7 +247,7 @@ A scrolling status strip showing a live summary of all data sources:
 3. METRO bus (live trips) and rail (scheduled departures) summary
 4. Live camera feed count
 5. Map points of interest (NRG Stadium, Fan Festival Entrance)
-6. Next scheduled NRG match
+6. Next scheduled NRG match, advanced automatically by kickoff time
 7. Map and background map information
 
 ---
@@ -240,7 +261,7 @@ A scrolling status strip showing a live summary of all data sources:
 | Houston METRO | Rail timetable (Red/Green/Purple Lines) | At startup |
 | INRIX | Traffic incidents and speed data | ~2 min |
 | TxDOT DriveTexas | Live traffic camera video | Live |
-| Houston TranStar | Traffic camera snapshots | ~60 sec |
+| Houston TranStar | Incidents, lane closures, roadway flood risk, corridor speeds | ~60 sec |
 | Google Maps | Satellite and traffic layers | Live |
 | NOAA GOES-18 | Satellite cloud imagery | ~10 min |
 
@@ -257,6 +278,7 @@ A scrolling status strip showing a live summary of all data sources:
 - **Weather alerts:** Hover over alert badges in the header for the full NWS headline
 - **Camera feeds:** Turn on the Cameras layer in Map Details to see all camera pins, or select a camera from the right panel to jump directly to it
 - **Traffic:** Red road lines on I-610 South Loop or US-59 near NRG indicate significant congestion — plan alternate routes
+- **Map summary:** Pan or zoom the map to update the traffic summary badge to the current visible area
 
 ---
 
