@@ -59,6 +59,12 @@ export interface DashboardAssistantContext {
       label: string
       direction: string
       group: string
+      status: string | null
+      sourceUpdated: string | null
+      distanceMiles: number | null
+      travelChartAvailable: boolean
+      volumeChartAvailable: boolean
+      volumeSensors: Array<{ id: string; direction: string; source: string }>
       travelMin: number
       delayMin: number
       avgSpeed: number
@@ -137,6 +143,8 @@ function renderMessageText(text: string) {
 
 const SUGGESTIONS = [
   'Summarize current traffic near NRG',
+  'How are routes to and from the stadium moving?',
+  'Which route segments have travel or volume charts?',
   'Are Bus to NRG Stadium trips delayed?',
   'What are the biggest risks right now?',
   'Are there lane closures in the current map view?',

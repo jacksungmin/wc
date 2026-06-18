@@ -20,6 +20,10 @@
   function = "api-proxy"
 
 [[edge_functions]]
+  path = "/transtar-fifa/*"
+  function = "api-proxy"
+
+[[edge_functions]]
   path = "/transtar-cams/*"
   function = "api-proxy"
 

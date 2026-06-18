@@ -92,7 +92,9 @@ function aiAssistantPlugin(apiKey?: string, model = 'gpt-5.5'): Plugin {
           'For a traffic summary, use this format with no intro paragraph: Overall: one sentence. Watch: 2 to 4 bullets, highest operational risk first. Next: one sentence with the most useful next action or monitoring focus.',
           'Prioritize current map-view traffic, TranStar lane closures, flood risks, weather alerts, METRO status, and next NRG match timing.',
           'For METRO bus delay questions, use transit.busToNrg delayedTrips, maxDelayMinutes, and nextTrips. A delayMinutes value of 0 means on time; null means scheduled/unknown.',
-          'For highway delay or speed-segment questions, use traffic.inrixSegments when records exist. If INRIX segment records lack readable road names or geometry, say INRIX speed records are available but use traffic.corridors delayMin, avgSpeed, slowSegments, and segmentDetails for named highway summaries. Do not say speed data is unavailable when TranStar corridor data is present.',
+          'For stadium route questions, use traffic.corridors first. These are live Houston TranStar FIFA route-monitor rows for routes to and from Houston Stadium, with travelMin, avgSpeed, status, distanceMiles, sourceUpdated, chart availability, volume sensors, and segmentDetails.',
+          'For highway delay or speed-segment questions, use traffic.inrixSegments when records exist. If INRIX segment records lack readable road names or geometry, say INRIX speed records are available but use traffic.corridors delayMin, avgSpeed, status, slowSegments, and segmentDetails for named highway summaries. Do not say speed data is unavailable when TranStar corridor data is present.',
+          'If asked about charts, explain that the dashboard can open TranStar travel-time history and traffic-volume charts for corridor rows where travelChartAvailable or volumeChartAvailable is true. Do not invent chart values because chart CSV samples are loaded only when a user opens a route detail chart.',
           'Mention at most 3 specific roads/incidents unless asked for details.',
           'If data is missing, say it is not available in the dashboard context.',
           'Do not invent incident locations, routes, closures, or recommendations.',
@@ -259,6 +261,15 @@ export default defineConfig(({ mode }) => {
         rewrite: (path) => path.replace(/^\/transtar-api/, '/api'),
         headers: {
           Referer: 'https://traffic.houstontranstar.org/',
+        },
+      },
+      '/transtar-fifa': {
+        target: 'https://traffic.houstontranstar.org',
+        changeOrigin: true,
+        secure: true,
+        rewrite: (path) => path.replace(/^\/transtar-fifa/, '/fifa2026'),
+        headers: {
+          Referer: 'https://traffic.houstontranstar.org/fifa2026/',
         },
       },
       // NWS weather API — requires User-Agent; CORS blocks direct browser requests

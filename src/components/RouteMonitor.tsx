@@ -3,6 +3,9 @@ import type { TranStarCorridor } from '@/types'
 import { CorridorDetail } from '@/components/CorridorDetail'
 
 function corridorStatus(c: TranStarCorridor): { dot: string; bg: string } {
+  if (c.status === 'good') return { dot: 'bg-emerald-400', bg: 'bg-emerald-500/[0.04]' }
+  if (c.status === 'warn') return { dot: 'bg-yellow-400',  bg: 'bg-yellow-500/[0.04]' }
+  if (c.status === 'bad')  return { dot: 'bg-red-400',     bg: 'bg-red-500/[0.04]' }
   if (c.travelMin < 0) return { dot: 'bg-[#4a5a72]', bg: '' }
   if (c.delayMin <= 1)  return { dot: 'bg-emerald-400', bg: 'bg-emerald-500/[0.04]' }
   if (c.delayMin <= 4)  return { dot: 'bg-yellow-400',  bg: 'bg-yellow-500/[0.04]' }
@@ -67,9 +70,10 @@ export function RouteMonitor({ corridors, loading, onCameraSelect }: RouteMonito
                     </span>
                     <span className={`text-[7px] font-mono w-14 text-right tabular-nums ${
                       noData ? 'text-[#4a5a72]' :
-                      c.delayMin > 0 ? 'text-orange-400' : 'text-emerald-500'
+                      c.status === 'bad' ? 'text-red-400' :
+                      c.status === 'warn' || c.delayMin > 0 ? 'text-orange-400' : 'text-emerald-500'
                     }`}>
-                      {noData ? 'no data' : c.delayMin > 0 ? `+${c.delayMin}m dly` : 'on time'}
+                      {noData ? 'no data' : c.delayMin > 0 ? `+${c.delayMin}m dly` : c.status === 'warn' ? 'slower' : c.status === 'bad' ? 'heavy' : 'normal'}
                     </span>
                   </button>
                 )

@@ -333,6 +333,16 @@ export default function App() {
         label: corridor.label,
         direction: corridor.dir,
         group: corridor.group,
+        status: corridor.status ?? null,
+        sourceUpdated: corridor.sourceUpdated ?? null,
+        distanceMiles: corridor.distanceMi ?? null,
+        travelChartAvailable: Boolean(corridor.chartRoute),
+        volumeChartAvailable: Boolean(corridor.volumeSensors?.length),
+        volumeSensors: (corridor.volumeSensors ?? []).map(sensor => ({
+          id: sensor.id,
+          direction: sensor.dir,
+          source: sensor.source,
+        })),
         travelMin: corridor.travelMin,
         delayMin: corridor.delayMin,
         avgSpeed: corridor.avgSpeed,
@@ -609,7 +619,7 @@ export default function App() {
           <div className="overflow-hidden border-b border-white/[0.06]" style={{ height: '24%' }}>
             <MatchSchedule matches={NRG_MATCHES} />
           </div>
-          <div className="overflow-hidden border-b border-white/[0.06]" style={{ height: '42%' }}>
+          <div className="overflow-hidden border-b border-white/[0.06]" style={{ height: '32%' }}>
             <MetroTransitPanel
               updates={filteredMetroUpdates}
               selectedId={selectedMetroId}
@@ -622,7 +632,7 @@ export default function App() {
               onToggleGroup={toggleMetroGroup}
             />
           </div>
-          <div className="overflow-hidden" style={{ height: '34%' }}>
+          <div className="overflow-hidden" style={{ height: '44%' }}>
             <RouteMonitor
               corridors={transtarCorridors}
               loading={transtarLoading}

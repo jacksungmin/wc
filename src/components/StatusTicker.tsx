@@ -45,18 +45,36 @@ export function StatusTicker({
   )
 
   const liveCorridors = transtarCorridors.filter(c => c.travelMin > 0)
-  const delayedCorridors = liveCorridors.filter(c => c.delayMin > 1)
+  const routeAlertCorridors = liveCorridors.filter(c =>
+    c.delayMin > 1 || c.status === 'warn' || c.status === 'bad' || (c.avgSpeed > 0 && c.avgSpeed < 25)
+  )
+  const toStadiumCorridors = liveCorridors.filter(c => c.group === 'to')
+  const fromStadiumCorridors = liveCorridors.filter(c => c.group === 'from')
+  const travelChartCount = liveCorridors.filter(c => c.chartRoute).length
+  const volumeChartCount = liveCorridors.filter(c => c.volumeSensors?.length).length
+  const routeUpdated = liveCorridors.find(c => c.sourceUpdated)?.sourceUpdated
+
+  const routeStatusLabel = (c: TranStarCorridor) => {
+    if (c.status === 'bad') return 'heavy'
+    if (c.status === 'warn') return 'slow'
+    if (c.delayMin > 1) return `+${c.delayMin}m delay`
+    if (c.avgSpeed > 0 && c.avgSpeed < 25) return `${c.avgSpeed} mph`
+    return 'normal'
+  }
 
   const corridorSummary = liveCorridors.length > 0
-    ? `⚽ NRG Route Monitor — ${liveCorridors.map(c =>
-        `${c.label} ${c.dir}: ${c.travelMin}m${c.delayMin > 1 ? ` (+${c.delayMin}m delay)` : ' on time'}`
-      ).join(' · ')}`
-    : '⚽ NRG Route Monitor — No live corridor data'
+    ? `NRG Route Monitor - ${toStadiumCorridors.length} to stadium / ${fromStadiumCorridors.length} from stadium live${routeUpdated ? ` - updated ${routeUpdated}` : ''} - charts ${travelChartCount} travel / ${volumeChartCount} volume`
+    : 'NRG Route Monitor - No live corridor data'
 
   const corridorItems: string[] = [
     corridorSummary,
-    ...delayedCorridors.map(c =>
-      `⚠️ Delay on ${c.label} ${c.dir} to NRG Stadium — ${c.travelMin}m travel · +${c.delayMin}m delay · avg ${c.avgSpeed} mph`
+    ...(routeAlertCorridors.length > 0
+      ? routeAlertCorridors.slice(0, 4).map(c =>
+        `Route Monitor Alert: ${c.group === 'to' ? 'To stadium' : 'From stadium'} - ${c.label} ${c.dir} - ${c.travelMin}m - ${routeStatusLabel(c)} - avg ${c.avgSpeed} mph`
+      )
+      : liveCorridors.slice(0, 3).map(c =>
+        `Route Monitor: ${c.group === 'to' ? 'To stadium' : 'From stadium'} - ${c.label} ${c.dir} - ${c.travelMin}m - normal - avg ${c.avgSpeed} mph`
+      )
     ),
   ]
 
@@ -99,7 +117,7 @@ export function StatusTicker({
     <div className="flex items-center h-7 bg-[#060a12] border-t border-white/[0.06] overflow-hidden flex-shrink-0">
       <div className="flex-shrink-0 px-2.5 border-r border-white/[0.06]">
         <span className="text-[8px] font-mono tracking-[0.15em] text-[#4a5a72] uppercase">
-          {alerts.length > 0 || majorIncidentCount > 0 || transtarIncidents.length > 0 || activeFloodRisks.length > 0 ? 'LIVE ALERTS' : 'STATUS'}
+          {alerts.length > 0 || majorIncidentCount > 0 || transtarIncidents.length > 0 || activeFloodRisks.length > 0 || routeAlertCorridors.length > 0 ? 'LIVE ALERTS' : 'STATUS'}
         </span>
       </div>
 

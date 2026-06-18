@@ -31,6 +31,10 @@ const ROUTES: Record<string, Route> = {
     base: 'https://traffic.houstontranstar.org/api/',
     headers: { 'Referer': 'https://traffic.houstontranstar.org/' },
   },
+  '/transtar-fifa/': {
+    base: 'https://traffic.houstontranstar.org/fifa2026/',
+    headers: { 'Referer': 'https://traffic.houstontranstar.org/fifa2026/' },
+  },
   '/transtar-cams/': {
     base: 'https://traffic.houstontranstar.org/layers/cameras/images/',
     headers: { 'Referer': 'https://traffic.houstontranstar.org/' },

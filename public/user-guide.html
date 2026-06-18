@@ -627,19 +627,23 @@
         </div>
 
         <!-- Three-column middle -->
-        <div style="display:grid;grid-template-columns:200px 1fr 200px;gap:4px;min-height:160px">
+        <div style="display:grid;grid-template-columns:200px 1fr 200px;gap:4px;min-height:190px">
 
           <!-- Left panel -->
           <div style="background:var(--raised);border:1px solid var(--border-md);border-radius:8px;padding:14px 16px;display:flex;flex-direction:column;gap:8px">
             <span style="color:var(--cyan);font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.12em;text-transform:uppercase;font-weight:600">Left Panel</span>
-            <div style="display:flex;flex-direction:column;gap:6px">
-              <div style="background:var(--surface);border:1px solid var(--border);border-radius:5px;padding:7px 10px">
+            <div style="display:flex;flex-direction:column;gap:6px;height:100%">
+              <div style="background:var(--surface);border:1px solid var(--border);border-radius:5px;padding:7px 10px;flex:0 0 24%">
                 <div style="color:var(--text);font-weight:600;margin-bottom:2px">Match Schedule</div>
-                <div style="color:var(--dim);font-size:10px">Upcoming & live games</div>
+                <div style="color:var(--dim);font-size:10px">Upcoming &amp; live games</div>
               </div>
-              <div style="background:var(--surface);border:1px solid var(--border);border-radius:5px;padding:7px 10px">
+              <div style="background:var(--surface);border:1px solid var(--border);border-radius:5px;padding:7px 10px;flex:0 0 32%">
                 <div style="color:var(--text);font-weight:600;margin-bottom:2px">METRO Transit</div>
                 <div style="color:var(--dim);font-size:10px">6 collapsible route groups</div>
+              </div>
+              <div style="background:var(--surface);border:1px solid var(--border);border-radius:5px;padding:7px 10px;flex:1;min-height:56px">
+                <div style="color:var(--text);font-weight:600;margin-bottom:2px">NRG Route Monitor</div>
+                <div style="color:var(--dim);font-size:10px">Live TranStar routes &middot; charts</div>
               </div>
             </div>
           </div>
@@ -780,6 +784,20 @@
           </tbody>
         </table>
       </div>
+      <h3>NRG Stadium Route Monitor</h3>
+      <p>Displays live Houston TranStar World Cup route-monitor rows for travel <strong>to Stadium</strong> and <strong>from Stadium</strong>. The panel refreshes about every 60 seconds and shows route name, direction, current travel time, average speed, condition status, and delay label.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Route Detail Tab</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td>Segments</td><td>Current segment, speed, travel time, and delay</td></tr>
+            <tr><td>Travel Chart</td><td>TranStar travel-time history loaded from the route chart CSV endpoint for the selected date</td></tr>
+            <tr><td>Volume</td><td>TranStar live volume and historical-average chart when sensors are available</td></tr>
+            <tr><td>Cameras</td><td>Related traffic cameras when the route maps to a known freeway camera group</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="note">If TranStar returns no volume rows for a sensor/date, the chart panel shows a no-data message.</div>
     </div>
 
     <!-- 5. Map -->
@@ -959,18 +977,20 @@
       </div>
 
       <h3>Ask Dashboard Assistant</h3>
-      <p>The <strong>Ask Dashboard</strong> button opens a read-only AI briefing panel on the map. It uses a live dashboard snapshot, including map extent, data status, selections, weather, alerts, INRIX traffic, TranStar incidents/closures/flood risk/corridors, METRO trips and delays, cameras, and the next NRG match.</p>
+      <p>The <strong>Ask Dashboard</strong> button opens a read-only AI briefing panel on the map. It uses a live dashboard snapshot, including map extent, data status, selections, weather, alerts, INRIX traffic, TranStar incidents/closures/flood risk/corridors, route chart availability, METRO trips and delays, cameras, and the next NRG match.</p>
       <div class="table-wrap">
         <table>
           <thead><tr><th>Prompt</th><th>Use</th></tr></thead>
           <tbody>
             <tr><td>Summarize current traffic near NRG</td><td>Creates a concise operations briefing</td></tr>
             <tr><td>What are the biggest risks right now?</td><td>Highlights incidents, closures, flood risk, weather, and transit concerns</td></tr>
+            <tr><td>How are routes to and from the stadium moving?</td><td>Summarizes live TranStar route-monitor rows</td></tr>
+            <tr><td>Which route segments have travel or volume charts?</td><td>Reports chart availability from the route monitor context</td></tr>
             <tr><td>Are there lane closures in the current map view?</td><td>Focuses on visible TranStar lane closure records</td></tr>
           </tbody>
         </table>
       </div>
-      <div class="note">The assistant is read-only and requires server-side <code>OPENAI_API_KEY</code> configuration in Netlify or the local server environment.</div>
+      <div class="note">The assistant is read-only and requires server-side <code>OPENAI_API_KEY</code> configuration in Netlify or the local server environment. It can describe route chart availability, but actual chart samples are loaded only when a user opens a route detail chart.</div>
     </div>
     <!-- 6. Right Panel -->
     <div class="section" id="right-panel">
@@ -1051,18 +1071,21 @@
           <h2>Status Ticker</h2>
         </div>
       </div>
-      <p>A scrolling strip at the bottom of the screen provides a real-time summary of all active data. The left label changes to <strong>LIVE ALERTS</strong> when weather alerts or major incidents are present.</p>
+      <p>A scrolling strip at the bottom of the screen provides a real-time summary of all active data. The left label changes to <strong>LIVE ALERTS</strong> when weather alerts, high-severity incidents, active TranStar incidents, flood alerts, or Route Monitor slow/heavy-delay conditions are present.</p>
       <div class="table-wrap">
         <table>
           <thead><tr><th>#</th><th>Content</th></tr></thead>
           <tbody>
             <tr><td>1</td><td>Active NWS weather alert names, or "No active weather alerts for Houston"</td></tr>
             <tr><td>2</td><td>INRIX incident count and major incident count</td></tr>
-            <tr><td>3</td><td>METRO live bus trips and scheduled rail departures summary</td></tr>
-            <tr><td>4</td><td>Live camera feed count</td></tr>
-            <tr><td>5</td><td>Map points of interest: NRG Stadium and Fan Festival Entrance</td></tr>
-            <tr><td>6</td><td>Next scheduled NRG match: teams, date, kickoff time, and automatic advancement</td></tr>
-            <tr><td>7</td><td>Current map style and background information</td></tr>
+            <tr><td>3</td><td>TranStar incident, lane closure, hotspot closure, and roadway flood-risk summary</td></tr>
+            <tr><td>4</td><td>NRG Route Monitor summary: routes to/from stadium, latest TranStar route timestamp, travel-chart count, and volume-chart count</td></tr>
+            <tr><td>5</td><td>Route Monitor alert rows for slow, heavy, delayed, or low-speed route segments</td></tr>
+            <tr><td>6</td><td>METRO live bus trips and scheduled rail departures summary</td></tr>
+            <tr><td>7</td><td>Live camera feed count</td></tr>
+            <tr><td>8</td><td>Map points of interest: NRG Stadium and Fan Festival Entrance</td></tr>
+            <tr><td>9</td><td>Next scheduled NRG match: teams, date, kickoff time, and automatic advancement</td></tr>
+            <tr><td>10</td><td>Current map style and background information</td></tr>
           </tbody>
         </table>
       </div>
@@ -1086,7 +1109,8 @@
             <tr><td>Houston METRO</td><td>Rail timetable (Red, Green, and Purple Lines)</td><td>At startup</td></tr>
             <tr><td>INRIX</td><td>Traffic incidents and corridor speed conditions</td><td>~2 min</td></tr>
             <tr><td>TxDOT DriveTexas</td><td>Live traffic camera video</td><td>Live</td></tr>
-            <tr><td>Houston TranStar</td><td>Incidents, lane closures, roadway flood risk, and corridor speeds</td><td>~60 sec</td></tr>
+            <tr><td>Houston TranStar</td><td>Incidents, lane closures, roadway flood risk, and live World Cup route monitor rows</td><td>~60 sec</td></tr>
+            <tr><td>Houston TranStar</td><td>Route travel-time history and traffic-volume chart CSV data</td><td>On route detail request</td></tr>
             <tr><td>OpenAI</td><td>Read-only dashboard assistant summaries</td><td>On request</td></tr>
             <tr><td>Google Maps</td><td>Satellite imagery and real-time traffic layers</td><td>Live</td></tr>
             <tr><td>NOAA GOES-18</td><td>Satellite cloud imagery</td><td>~10 min</td></tr>
@@ -1130,7 +1154,7 @@
           <span class="tip-icon">🚦</span>
           <div class="tip-body">
             <strong>Traffic Monitoring</strong>
-            <span>Watch for red road lines on I-610 South Loop or US-59 near NRG. Use the INRIX Traffic panel on the right for a list of active incidents. Click any incident to zoom the map to its exact location.</span>
+            <span>Watch for red road lines on I-610 South Loop or US-59 near NRG. Click a TranStar route row to see segment details, travel-time history, traffic-volume charts when available, and nearby cameras.</span>
           </div>
         </li>
         <li>

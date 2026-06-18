@@ -85,14 +85,25 @@ export interface TranStarSegmentDetail {
   lengthMi: number
 }
 
+export interface TranStarVolumeSensor {
+  id: string
+  dir: string
+  source: 'freeway' | 'street'
+}
+
 export interface TranStarCorridor {
   label: string
   rd: string
   dir: string
   group: 'to' | 'from'
+  status?: 'good' | 'warn' | 'bad' | 'unknown'
+  chartRoute?: string
+  volumeSensors?: TranStarVolumeSensor[]
   travelMin: number
   delayMin: number
   avgSpeed: number
+  distanceMi?: number
+  sourceUpdated?: string
   segments: TranStarSegmentDetail[]
   camHighway: string | null
 }

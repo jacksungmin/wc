@@ -13,16 +13,19 @@ The World Cup 2026 Mobility Dashboard is a real-time situational awareness tool 
 ## Layout
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│  HEADER: Logo · Title · Weather Strip · Alerts · Clock              │
-├──────────────┬──────────────────────────────────┬───────────────────┤
-│  LEFT PANEL  │         CENTER MAP               │   RIGHT PANEL     │
-│  · Matches   │                                  │   · Camera Feeds  │
-│  · METRO     │                                  │   · INRIX Traffic │
-├──────────────┴──────────────────────────────────┴───────────────────┤
-│  STATUS TICKER (scrolling)                                           │
-└─────────────────────────────────────────────────────────────────────┘
++--------------------------------------------------------------------------+
+| HEADER: Logo . Title . Weather Strip . Alerts . Clock                    |
++---------------+--------------------------------------+-------------------+
+| LEFT PANEL    | CENTER MAP                           | RIGHT PANEL       |
+| - Matches     | - NRG Stadium                        | - Camera Feeds    |
+| - METRO       | - Fan Festival                       | - INRIX Traffic   |
+| - NRG Routes  | - Bus/Rail, Cameras, Incidents       | - TranStar Traffic|
++---------------+--------------------------------------+-------------------+
+| STATUS TICKER: weather . incidents . METRO trips . routes . cameras      |
++--------------------------------------------------------------------------+
 ```
+
+Desktop left-panel vertical split: **Match Schedule 24%**, **METRO Transit 32%**, **NRG Stadium Route Monitor 44%**.
 
 ---
 
@@ -84,6 +87,30 @@ Displays real-time and scheduled transit data organized into six collapsible rou
 - **Arrival time** — next stop arrival time
 - **Delay** — "on time" (green), "+Xm" (amber/orange if delayed), or "scheduled" (gray)
 - **Click any trip** — zooms the map to that vehicle or stop location
+
+---
+
+### NRG Stadium Route Monitor
+
+Displays live Houston TranStar World Cup route-monitor rows for travel **to Stadium** and **from Stadium**.
+
+- Uses the Houston TranStar FIFA route monitor feed, refreshed about every 60 seconds
+- Shows route name, direction, current travel time, average speed, condition status, and delay label
+- Groups routes by **To Stadium** and **From Stadium**
+- Click a route row to open route details
+- Route details include segment stats and available camera shortcuts
+- **Travel Chart** opens TranStar historical travel-time data for the selected route/date
+- **Volume** opens TranStar traffic-volume and historical-average charts when that route has volume sensors
+- If TranStar returns no volume rows for a sensor/date, the chart panel shows a no-data message
+
+#### Route Detail Tabs
+
+| Tab | Description |
+|---|---|
+| **Segments** | Current segment, speed, travel time, and delay |
+| **Travel Chart** | TranStar travel-time history loaded from the route chart CSV endpoint |
+| **Volume** | TranStar live volume and historical-average chart when sensors are available |
+| **Cameras** | Related traffic cameras when the route maps to a known freeway camera group |
 
 ---
 
@@ -212,8 +239,10 @@ The bottom-left map badge summarizes traffic data inside the current map view. C
 
 The **Ask Dashboard** button opens a read-only AI briefing panel on the map.
 
-- Uses a live dashboard snapshot, including map extent, data status, selections, weather, alerts, INRIX traffic, TranStar incidents/closures/flood risk/corridors, METRO trips and delays, cameras, and next NRG match
+- Uses a live dashboard snapshot, including map extent, data status, selections, weather, alerts, INRIX traffic, TranStar incidents/closures/flood risk/corridors, route chart availability, METRO trips and delays, cameras, and next NRG match
 - Supports suggested prompts such as "Summarize current traffic near NRG" and "What are the biggest risks right now?"
+- Can summarize routes to/from the stadium using live TranStar route-monitor rows
+- Can explain whether travel-time and volume charts are available for route rows, but chart sample values are loaded only when a route detail chart is opened
 - Does not change map layers, filters, selections, or camera feeds
 - Requires server-side `OPENAI_API_KEY` configuration in Netlify or the local server environment
 ---
@@ -252,15 +281,18 @@ Shows two traffic tabs: **INRIX** and **TranStar**.
 
 ## Status Ticker (Bottom Bar)
 
-A scrolling status strip showing a live summary of all data sources:
+A scrolling status strip showing a live summary of all data sources. The left label changes to **LIVE ALERTS** when weather alerts, high-severity incidents, active TranStar incidents, flood alerts, or Route Monitor slow/heavy-delay conditions are present.
 
 1. Active weather alerts (event names) or "No active weather alerts"
 2. INRIX incident count and major incident count
-3. METRO bus (live trips) and rail (scheduled departures) summary
-4. Live camera feed count
-5. Map points of interest (NRG Stadium, Fan Festival Entrance)
-6. Next scheduled NRG match, advanced automatically by kickoff time
-7. Map and background map information
+3. TranStar incident, lane closure, hotspot closure, and roadway flood-risk summary
+4. NRG Route Monitor summary: routes to/from stadium, latest TranStar route timestamp, travel-chart count, and volume-chart count
+5. Route Monitor alert rows for slow, heavy, delayed, or low-speed route segments
+6. METRO bus (live trips) and rail (scheduled departures) summary
+7. Live camera feed count
+8. Map points of interest (NRG Stadium, Fan Festival Entrance)
+9. Next scheduled NRG match, advanced automatically by kickoff time
+10. Map and background map information
 
 ---
 
@@ -273,7 +305,8 @@ A scrolling status strip showing a live summary of all data sources:
 | Houston METRO | Rail timetable (Red/Green/Purple Lines) | At startup |
 | INRIX | Traffic incidents and speed data | ~2 min |
 | TxDOT DriveTexas | Live traffic camera video | Live |
-| Houston TranStar | Incidents, lane closures, roadway flood risk, corridor speeds | ~60 sec |
+| Houston TranStar | Incidents, lane closures, roadway flood risk, live World Cup route monitor rows | ~60 sec |
+| Houston TranStar | Route travel-time history and traffic-volume chart CSV data | On route detail request |
 | OpenAI | Read-only dashboard assistant summaries | On request |
 | Google Maps | Satellite and traffic layers | Live |
 | NOAA GOES-18 | Satellite cloud imagery | ~10 min |
@@ -291,6 +324,7 @@ A scrolling status strip showing a live summary of all data sources:
 - **Weather alerts:** Hover over alert badges in the header for the full NWS headline
 - **Camera feeds:** Turn on the Cameras layer in Map Details to see all camera pins, or select a camera from the right panel to jump directly to it
 - **Traffic:** Red road lines on I-610 South Loop or US-59 near NRG indicate significant congestion — plan alternate routes
+- **Route monitor:** Click a TranStar route row to see segment details, route travel-time history, traffic-volume charts when available, and nearby cameras
 - **Map summary:** Pan or zoom the map to update the traffic summary badge to the current visible area
 - **AI assistant:** Use **Ask Dashboard** for a short operational briefing; configure `OPENAI_API_KEY` server-side before using it in production
 
