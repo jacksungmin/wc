@@ -50,6 +50,9 @@ export interface DashboardAssistantContext {
     transtarLaneClosuresVisible: number
     transtarFloodRisksTotal: number
     transtarFloodRisksVisible: number
+    routeTravelHistoryLoading: boolean
+    routeTravelHistoryError: string | null
+    routeTravelHistoryUpdated: string | null
     inrixIncidents: Array<{ id: string; type: string; subType: string; severity: number; description: string; fullDescription: string; startTime: string; lat: number; lng: number; visibleInMap: boolean }>
     inrixSegments: Array<{ code: string; speed: number; averageSpeed: number; travelTime: number; startLat: number; startLng: number; endLat: number; endLng: number; visibleInMap: boolean }>
     transtarIncidents: Array<{ id: string; desc: string; location: string; lanes: string; status: string; time: string; date: string; vehicles: number; lat: number; lng: number; visibleInMap: boolean }>
@@ -76,6 +79,41 @@ export interface DashboardAssistantContext {
         travelMinutes: number | null
         delayMinutes: number
         lengthMiles: number
+      }>
+    }>
+    routeTravelHistory: Array<{
+      label: string
+      direction: string
+      group: string
+      chartRoute: string
+      sampleDates: number
+      noDataDates: string[]
+      typicalTravelMin: number | null
+      peakTravelMin: number | null
+      peakTime: string | null
+      preGamePeakTravelMin: number | null
+      preGamePeakTime: string | null
+      postGamePeakTravelMin: number | null
+      postGamePeakTime: string | null
+      dateSummaries: Array<{
+        date: string
+        match: string
+        kickoff: string
+        samples: number
+        baselineTravelMin: number | null
+        typicalTravelMin: number | null
+        peakTravelMin: number | null
+        peakTime: string | null
+        preGame: { avgTravelMin: number | null; peakTravelMin: number | null; peakTime: string | null }
+        postGame: { avgTravelMin: number | null; peakTravelMin: number | null; peakTime: string | null }
+        congestionWindows: Array<{
+          startTime: string
+          endTime: string
+          peakTravelMin: number
+          avgTravelMin: number
+          minutesFromKickoffStart: number | null
+          minutesFromKickoffEnd: number | null
+        }>
       }>
     }>
   }
@@ -144,7 +182,8 @@ function renderMessageText(text: string) {
 const SUGGESTIONS = [
   'Summarize current traffic near NRG',
   'How are routes to and from the stadium moving?',
-  'Which route segments have travel or volume charts?',
+  'Estimate congested route times from previous game dates',
+  'When did travel times spike before and after past NRG games?',
   'Are Bus to NRG Stadium trips delayed?',
   'What are the biggest risks right now?',
   'Are there lane closures in the current map view?',

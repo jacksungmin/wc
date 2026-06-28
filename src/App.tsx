@@ -12,6 +12,7 @@ import { useWeather } from '@/hooks/useWeather'
 import { useInrix } from '@/hooks/useInrix'
 import { useMetroTransit } from '@/hooks/useMetroTransit'
 import { useTranStar } from '@/hooks/useTranStar'
+import { useTranStarTravelHistory } from '@/hooks/useTranStarTravelHistory'
 import { findNextNrgMatch, NRG_MATCHES } from '@/data/matches'
 import { ALL_CAMERAS, MAP_CAMERAS } from '@/data/cameras'
 import { BusFront, CalendarDays, Cctv, Map as MapIcon, Route, TriangleAlert } from 'lucide-react'
@@ -111,6 +112,7 @@ export default function App() {
   const { token: inrixToken, incidents, segments, connected, loading: inrixLoading, error: inrixError, lastUpdated: inrixUpdated, refresh: inrixRefresh } = useInrix()
   const { updates: metroUpdates, loading: metroLoading, error: metroError, lastUpdated: metroUpdated, refresh: metroRefresh } = useMetroTransit()
   const { incidents: transtarIncidents, laneClosures: transtarLaneClosures, floodRisks: transtarFloodRisks, corridors: transtarCorridors, connected: transtarConnected, loading: transtarLoading, error: transtarError, lastUpdated: transtarUpdated, refresh: transtarRefresh } = useTranStar()
+  const { summaries: routeTravelHistory, loading: routeTravelHistoryLoading, error: routeTravelHistoryError, lastUpdated: routeTravelHistoryUpdated } = useTranStarTravelHistory(transtarCorridors, NRG_MATCHES)
 
   const visibleInrixIncidents = useMemo(() => {
     if (!mapExtent) return incidents
@@ -265,6 +267,9 @@ export default function App() {
       transtarLaneClosuresVisible: visibleTranStarLaneClosures.length,
       transtarFloodRisksTotal: transtarFloodRisks.length,
       transtarFloodRisksVisible: visibleTranStarFloodRisks.length,
+      routeTravelHistoryLoading,
+      routeTravelHistoryError,
+      routeTravelHistoryUpdated: routeTravelHistoryUpdated?.toISOString() ?? null,
       inrixIncidents: incidents.map(incident => ({
         id: incident.id,
         type: incident.type,
@@ -354,6 +359,34 @@ export default function App() {
           travelMinutes: segment.travelSec >= 0 ? Math.round(segment.travelSec / 60) : null,
           delayMinutes: Math.round(segment.delaySec / 60),
           lengthMiles: segment.lengthMi,
+        })),
+      })),
+      routeTravelHistory: routeTravelHistory.map(summary => ({
+        label: summary.label,
+        direction: summary.direction,
+        group: summary.group,
+        chartRoute: summary.chartRoute,
+        sampleDates: summary.sampleDates,
+        noDataDates: summary.noDataDates,
+        typicalTravelMin: summary.typicalTravelMin,
+        peakTravelMin: summary.peakTravelMin,
+        peakTime: summary.peakTime,
+        preGamePeakTravelMin: summary.preGamePeakTravelMin,
+        preGamePeakTime: summary.preGamePeakTime,
+        postGamePeakTravelMin: summary.postGamePeakTravelMin,
+        postGamePeakTime: summary.postGamePeakTime,
+        dateSummaries: summary.dateSummaries.map(dateSummary => ({
+          date: dateSummary.date,
+          match: dateSummary.match,
+          kickoff: dateSummary.kickoff,
+          samples: dateSummary.samples,
+          baselineTravelMin: dateSummary.baselineTravelMin,
+          typicalTravelMin: dateSummary.typicalTravelMin,
+          peakTravelMin: dateSummary.peakTravelMin,
+          peakTime: dateSummary.peakTime,
+          preGame: dateSummary.preGame,
+          postGame: dateSummary.postGame,
+          congestionWindows: dateSummary.congestionWindows,
         })),
       })),
     },
@@ -461,6 +494,10 @@ export default function App() {
     nextMatch,
     observation,
     segments,
+    routeTravelHistory,
+    routeTravelHistoryError,
+    routeTravelHistoryLoading,
+    routeTravelHistoryUpdated,
     selectedCamera,
     selectedCameraId,
     selectedIncidentId,
